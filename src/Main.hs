@@ -108,3 +108,64 @@ aba (a:b:c:ds)
   | a == c = True
   | True = aba (b:c:ds)
 aba _ = False
+
+-- Problem 6 --
+data Instruction = Instruction { start :: Point, end :: Point, act :: SwitchAct }
+                 deriving (Show)
+
+data Point = Point (Int, Int)
+           deriving (Show)
+
+data SwitchAct = TurnOff | TurnOn | Toggle
+               deriving (Show)
+
+startingGrid = replicate 1000 $ replicate 1000 False
+
+do6 TurnOff _ = False
+do6 TurnOn _ = True
+do6 Toggle x = not x
+
+switchRow :: Int -> Int -> SwitchAct -> [Bool] -> [Bool]
+switchRow start stop instruction input = lMargin ++ changed ++ rMargin
+  where dX = stop - start + 1 -- +1 because coordinates are inclusive
+        lMargin = take start input
+        changed = map (do6 instruction) $ take dX $ drop start input
+        rMargin = drop stop input
+
+switchGrid :: [[Bool]] -> Instruction -> [[Bool]]
+switchGrid input (Instruction (Point (startX, startY)) (Point (endX, endY)) instruction) =
+  tMargin ++ changed ++ bMargin
+  where dY = endY - startY + 1
+        tMargin = take startY input
+        changed = map (switchRow startX endX instruction) $ take dY $ drop startY input
+        bMargin = drop endY input
+
+parseInstruction :: Parsec String Instruction
+parseInstruction = do
+  act <- parseAct
+  start <- parsePoint
+  string space >> "through" >> space
+  end <- parsePoint
+  newline
+  return $ Instruction start end act
+
+parseAct = do
+  act <- choice [parseToggle, parseTurnOn, parseTurnOff]
+  space
+  return act
+
+parseTurnOn :: Parsec String SwitchAct
+parseTurnOn = string "turn on" >> return TurnOn
+
+parseTurnOff :: Parsec String SwitchAct
+parseTurnOff = string "turn off" >> return TurnOff
+
+parseToggle :: Parsec String SwitchAct
+parseToggle = string "toggle" >> return Toggle
+
+parsePoint :: Parsec String Point
+parsePoint = do
+  x <- parseInt
+  char ','
+  y <- parseInt
+  return $ Point (x, y)
