@@ -120,13 +120,12 @@ data Point = Point (Int, Int)
 data SwitchAct = TurnOff | TurnOn | Toggle
                deriving (Show)
 
-startingGrid = replicate 1000 $ replicate 1000 False
+startingGrid = replicate 1000 $ replicate 1000 0
 
-do6 TurnOff _ = False
-do6 TurnOn _ = True
-do6 Toggle x = not x
+do6 TurnOff x = if (x > 0) then x - 1 else 0
+do6 TurnOn x = x + 1
+do6 Toggle x = x + 2
 
-switchRow :: Int -> Int -> SwitchAct -> [Bool] -> [Bool]
 switchRow start end instruction input =
   lMargin ++ changed ++ rMargin
   where dX = (end - start) + 1 -- +1 because coordinates are inclusive
@@ -134,7 +133,6 @@ switchRow start end instruction input =
         changed = map (do6 instruction) $ take dX $ drop start input
         rMargin = drop (end + 1) input
 
-switchGrid :: Instruction -> [[Bool]] -> [[Bool]]
 switchGrid (Instruction (Point (startX, startY)) (Point (endX, endY)) instruction) input =
   tMargin ++ changed ++ bMargin
   where dY = (endY - startY) + 1
@@ -145,22 +143,18 @@ switchGrid (Instruction (Point (startX, startY)) (Point (endX, endY)) instructio
 slurpInstructions = do
   rights . map (runParser parseInstruction "") . lines <$> readFile "puzzle6.txt"
 
-newGrid n = replicate n $ replicate n False
+newGrid n = replicate n $ replicate n 0
 
 p6_1 = do
   is <- slurpInstructions
   let final = foldl (flip switchGrid) (newGrid 1000) is
-      count = sum $ map (\r -> length (filter id r)) final
-  print count
+      totalBrightness = sum $ map sum final
+  print totalBrightness
 
 testGrid :: Int -> [Instruction] -> IO ()
 testGrid s is = showGrid $ foldl (flip switchGrid) (newGrid s) is
 
-showGrid :: [[Bool]] -> IO ()
-showGrid g = mapM_ putStrLn $ map showRow g
-
-showRow :: [Bool] -> String
-showRow = map (\c -> if c then 'O' else '.')
+showGrid g = mapM_ putStrLn $ map show g
 
 parseInstruction :: Parsec String Instruction
 parseInstruction = do
