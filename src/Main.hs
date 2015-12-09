@@ -3,9 +3,10 @@ module Main where
 import Text.Megaparsec
 import Data.List
 import Data.Hash.MD5
+import Data.Either
 
 main :: IO ()
-main = p5_2
+main = p6_1
 
 p2_2 = do
   input <- readFile "puzzle2.txt"
@@ -126,31 +127,51 @@ do6 TurnOn _ = True
 do6 Toggle x = not x
 
 switchRow :: Int -> Int -> SwitchAct -> [Bool] -> [Bool]
-switchRow start stop instruction input = lMargin ++ changed ++ rMargin
-  where dX = stop - start + 1 -- +1 because coordinates are inclusive
+switchRow start end instruction input =
+  lMargin ++ changed ++ rMargin
+  where dX = (end - start) + 1 -- +1 because coordinates are inclusive
         lMargin = take start input
         changed = map (do6 instruction) $ take dX $ drop start input
-        rMargin = drop stop input
+        rMargin = drop (end + 1) input
 
-switchGrid :: [[Bool]] -> Instruction -> [[Bool]]
-switchGrid input (Instruction (Point (startX, startY)) (Point (endX, endY)) instruction) =
+switchGrid :: Instruction -> [[Bool]] -> [[Bool]]
+switchGrid (Instruction (Point (startX, startY)) (Point (endX, endY)) instruction) input =
   tMargin ++ changed ++ bMargin
-  where dY = endY - startY + 1
+  where dY = (endY - startY) + 1
         tMargin = take startY input
         changed = map (switchRow startX endX instruction) $ take dY $ drop startY input
-        bMargin = drop endY input
+        bMargin = drop (endY + 1) input
+
+slurpInstructions = do
+  rights . map (runParser parseInstruction "") . lines <$> readFile "puzzle6.txt"
+
+newGrid n = replicate n $ replicate n False
+
+p6_1 = do
+  is <- slurpInstructions
+  let final = foldl (flip switchGrid) (newGrid 1000) is
+      count = sum $ map (\r -> length (filter id r)) final
+  print count
+
+testGrid :: Int -> [Instruction] -> IO ()
+testGrid s is = showGrid $ foldl (flip switchGrid) (newGrid s) is
+
+showGrid :: [[Bool]] -> IO ()
+showGrid g = mapM_ putStrLn $ map showRow g
+
+showRow :: [Bool] -> String
+showRow = map (\c -> if c then 'O' else '.')
 
 parseInstruction :: Parsec String Instruction
 parseInstruction = do
   act <- parseAct
   start <- parsePoint
-  string space >> "through" >> space
+  space >> string "through" >> space
   end <- parsePoint
-  newline
   return $ Instruction start end act
 
 parseAct = do
-  act <- choice [parseToggle, parseTurnOn, parseTurnOff]
+  act <- choice [try parseToggle, try parseTurnOn, try parseTurnOff]
   space
   return act
 
@@ -169,3 +190,9 @@ parsePoint = do
   char ','
   y <- parseInt
   return $ Point (x, y)
+
+parseInt :: Parsec String Int
+parseInt = do
+  i <- read <$> some digitChar
+  space
+  return i
