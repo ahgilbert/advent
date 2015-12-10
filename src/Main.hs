@@ -1,46 +1,74 @@
 module Main where
 
 import Text.Megaparsec
-import Data.List
-import Data.Hash.MD5
 import Data.Either
+import Data.Hash.MD5
+import Data.List
 
 main :: IO ()
-main = p6_1
+main = p2_1
 
-p2_2 = do
-  input <- readFile "puzzle2.txt"
-  let gifts = either (\_ -> [])
-              id $
-              runParser (some parseDimensions) "" input
-      ribbons = map ribbonLength gifts
-  print $ sum ribbons
+-- Problem 1 --
+p1_1 = do
+  instructions <- readFile "puzzle1.txt"
+  let up = length $ filter (== '(') instructions
+      down = length $ filter (== ')') instructions
+   in putStrLn . show $ up - down
 
-ribbonLength dims =
-      let vol = product dims
-          smallestArea = perimeter . smallestSide $ dims
-          in
-          vol + smallestArea
+p1_2 = do
+  instructions <- readFile "puzzle1.txt"
+  print $ length instructions
+  let faith = sumBraces instructions
+      hope = length $ takeWhile (0 <=) faith
+  print hope
 
-parseDimensions :: Parsec String [Int]
-parseDimensions = do
-  l <- parseNum
+sumBraces :: String -> [Int]
+sumBraces instructions = scanl (\s c -> if c == '(' then s + 1 else s - 1) 0 instructions
+
+
+
+
+
+
+
+
+-- Problem 2 --
+p2_1 = do
+  source <- readFile "puzzle2.txt"
+  let gifts = runParser (some giftParser) "" source
+      faith = either (\_ -> []) (map allPairs) gifts
+      hope = map (sum . wrap . sort . (map prod)) faith
+  print $ sum hope
+
+giftParser :: Parsec String [Int]
+giftParser = do
+  l <- parseInt
   char 'x'
-  w <- parseNum
+  w <- parseInt
   char 'x'
-  h <- parseNum
+  h <- parseInt
   newline
   return [l,w,h]
 
-parseNum = read <$> some digitChar
-
-perimeter (x,y) = 2 * x + 2 * y
-area (x,y) = x * y
-
-smallestSide ps = minimumBy (\x y -> compare (area x) (area y)) $ allPairs ps
+parseInt = read <$> some digitChar
 
 allPairs :: [a] -> [(a,a)]
-allPairs ls = [(x,y) | (x:ys) <- tails ls, y <- ys]
+allPairs xs = [(x,y) | (x:ys) <- tails xs, y <- ys]
+
+prod :: Num a => (a,a) -> a
+prod (x,y) = x * y
+
+wrap xs@(x:_) = x : map (2*) xs
+
+perimeter (x,y) = (2 * x) + (2 * y)
+
+
+
+
+
+
+
+-- Problem 3 --
 
 p3_1 = do
   input <- readFile "puzzle3.txt"
@@ -48,18 +76,16 @@ p3_1 = do
       uniqHouses = nub houses
     in print $ length uniqHouses
 
-followDirections (x,y) '^' = (x, y + 1)
-followDirections (x,y) '>' = (x + 1, y)
-followDirections (x,y) 'v' = (x, y - 1)
-followDirections (x,y) '<' = (x - 1, y)
+followDirections (x,y) '^' = (x,y + 1)
+followDirections (x,y) '>' = (x + 1,y)
+followDirections (x,y) 'v' = (x,y - 1)
+followDirections (x,y) '<' = (x - 1,y)
 
 p3_2 = do
   input <- readFile "puzzle3.txt"
   let aHouses = scanl followDirections (0,0) (evens input)
       bHouses = scanl followDirections (0,0) (odds input)
-    in
-    print $ length (nub $ aHouses ++ bHouses)
-
+    in print $ length (nub $ aHouses ++ bHouses)
 
 evens (_:x:xs) = x : evens xs
 evens _ = []
@@ -68,23 +94,50 @@ odds (x:_:xs) = x : odds xs
 odds (x:[]) = [x]
 odds _ = []
 
+
+
+
+
+
+
+
+
+-- Problem 4 --
+
 p4_1 = do
   let allHashes = map (cathash "bgvyzdsv") [1..]
       misses = takeWhile (\h -> take 5 h /= "00000") allHashes
   print $ length misses
 
-p4_2 = do
-  let allHashes = map (cathash "bgvyzdsv") [1..]
-      misses = takeWhile (\h -> take 6 h /= "000000") allHashes
-  print $ length misses
+p4_2 = print "similar"
 
-cathash :: String -> Int -> String
 cathash key = md5s . Str . (key ++) . show
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Problem 5 --
 p5 isNice = do
   input <- lines <$> readFile "puzzle5.txt"
   let faith = filter isNice input
-  mapM_ (putStrLn . show) faith
+  print $ length faith
+  --  mapM_ (putStrLn . show) faith
 
 p5_1 = p5 isNice1
 
@@ -110,6 +163,11 @@ aba (a:b:c:ds)
   | True = aba (b:c:ds)
 aba _ = False
 
+
+
+
+
+
 -- Problem 6 --
 data Instruction = Instruction { start :: Point, end :: Point, act :: SwitchAct }
                  deriving (Show)
@@ -120,18 +178,14 @@ data Point = Point (Int, Int)
 data SwitchAct = TurnOff | TurnOn | Toggle
                deriving (Show)
 
-startingGrid = replicate 1000 $ replicate 1000 0
+p6_1 = do
+  is <- slurpInstructions
+  let finalGrid = foldl (flip switchGrid) (newGrid 1000) is
+      totalBrightness = sum $ map sum finalGrid
+  print totalBrightness
 
-do6 TurnOff x = if (x > 0) then x - 1 else 0
-do6 TurnOn x = x + 1
-do6 Toggle x = x + 2
 
-switchRow start end instruction input =
-  lMargin ++ changed ++ rMargin
-  where dX = (end - start) + 1 -- +1 because coordinates are inclusive
-        lMargin = take start input
-        changed = map (do6 instruction) $ take dX $ drop start input
-        rMargin = drop (end + 1) input
+newGrid n = replicate n $ replicate n 0
 
 switchGrid (Instruction (Point (startX, startY)) (Point (endX, endY)) instruction) input =
   tMargin ++ changed ++ bMargin
@@ -140,21 +194,26 @@ switchGrid (Instruction (Point (startX, startY)) (Point (endX, endY)) instructio
         changed = map (switchRow startX endX instruction) $ take dY $ drop startY input
         bMargin = drop (endY + 1) input
 
-slurpInstructions = do
-  rights . map (runParser parseInstruction "") . lines <$> readFile "puzzle6.txt"
+switchRow start end instruction input =
+  lMargin ++ changed ++ rMargin
+  where dX = (end - start) + 1 -- +1 because coordinates are inclusive
+        lMargin = take start input
+        changed = map (do6 instruction) $ take dX $ drop start input
+        rMargin = drop (end + 1) input
 
-newGrid n = replicate n $ replicate n 0
-
-p6_1 = do
-  is <- slurpInstructions
-  let final = foldl (flip switchGrid) (newGrid 1000) is
-      totalBrightness = sum $ map sum final
-  print totalBrightness
+do6 TurnOff x = if (x > 0) then x - 1 else 0
+do6 TurnOn x = x + 1
+do6 Toggle x = x + 2
 
 testGrid :: Int -> [Instruction] -> IO ()
 testGrid s is = showGrid $ foldl (flip switchGrid) (newGrid s) is
 
 showGrid g = mapM_ putStrLn $ map show g
+
+
+
+slurpInstructions = do
+  rights . map (runParser parseInstruction "") . lines <$> readFile "puzzle6.txt"
 
 parseInstruction :: Parsec String Instruction
 parseInstruction = do
@@ -169,24 +228,19 @@ parseAct = do
   space
   return act
 
-parseTurnOn :: Parsec String SwitchAct
 parseTurnOn = string "turn on" >> return TurnOn
-
-parseTurnOff :: Parsec String SwitchAct
 parseTurnOff = string "turn off" >> return TurnOff
-
-parseToggle :: Parsec String SwitchAct
 parseToggle = string "toggle" >> return Toggle
 
 parsePoint :: Parsec String Point
 parsePoint = do
-  x <- parseInt
+  x <- parseInt'
   char ','
-  y <- parseInt
+  y <- parseInt'
   return $ Point (x, y)
 
-parseInt :: Parsec String Int
-parseInt = do
+parseInt' :: Parsec String Int
+parseInt' = do
   i <- read <$> some digitChar
   space
   return i
@@ -219,3 +273,30 @@ escapedChar = do
            try (char 'x' >> hexDigitChar >> hexDigitChar)])
   return 1
 
+p8_2 = do
+  input <- lines <$> readFile "puzzle8.txt"
+  let raw = map length input
+      encoded = map (length . show) input
+  print $ sum $ zipWith (-) encoded raw
+
+-- Problem 9 --
+p9_1 = do
+  input <- lines <$> readFile "puzzle9.txt"
+  print "later"
+
+-- Problem 10 --
+p10_1 = do
+  let input = "1113122113"
+  print $ take 51 $ map length $ iterate lookSay input
+
+lookSay :: String -> String
+lookSay s =
+  let (inits, rest) = breakDupes s
+   in translate inits ++ if rest /= [] then lookSay rest else []
+
+breakDupes s@(a:_) =
+  let chunkSize =  length $ takeWhile (==a) s
+   in splitAt chunkSize s
+breakDupes _ = ([],[])
+
+translate s = show (length s) ++ [head s]
