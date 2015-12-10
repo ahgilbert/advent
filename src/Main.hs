@@ -190,3 +190,32 @@ parseInt = do
   i <- read <$> some digitChar
   space
   return i
+
+-- Problem 7 --
+
+-- Problem 8 --
+p8_1 = do
+  input <- lines <$> readFile "puzzle8.txt"
+  let mem = sum $ map sum $ rights $ map (runParser memSize "") input
+      code = sum $ map codeSize input
+  print code
+  print mem
+  print $ code - mem
+
+codeSize :: [a] -> Int
+codeSize = length
+
+memSize = do
+  char '\"'
+  count <- option [0] $ some $ choice [try escapedChar, noneOf "\"" >> return 1]
+  char '\"'
+  return count
+
+escapedChar :: Parsec String Int
+escapedChar = do
+  (char '\\')
+  (choice [try (char '\\'),
+           try (char '\"'),
+           try (char 'x' >> hexDigitChar >> hexDigitChar)])
+  return 1
+
