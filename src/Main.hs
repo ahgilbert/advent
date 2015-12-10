@@ -169,11 +169,8 @@ aba _ = False
 
 
 -- Problem 6 --
-data Instruction = Instruction { start :: Point, end :: Point, act :: SwitchAct }
+data Instruction = Instruction { start :: (Int,Int), end :: (Int,Int), act :: SwitchAct }
                  deriving (Show)
-
-data Point = Point (Int, Int)
-           deriving (Show)
 
 data SwitchAct = TurnOff | TurnOn | Toggle
                deriving (Show)
@@ -187,7 +184,7 @@ p6_1 = do
 
 newGrid n = replicate n $ replicate n 0
 
-switchGrid (Instruction (Point (startX, startY)) (Point (endX, endY)) instruction) input =
+switchGrid (Instruction (startX, startY) (endX, endY) instruction) input =
   tMargin ++ changed ++ bMargin
   where dY = (endY - startY) + 1
         tMargin = take startY input
@@ -232,12 +229,12 @@ parseTurnOn = string "turn on" >> return TurnOn
 parseTurnOff = string "turn off" >> return TurnOff
 parseToggle = string "toggle" >> return Toggle
 
-parsePoint :: Parsec String Point
+parsePoint :: Parsec String (Int,Int)
 parsePoint = do
   x <- parseInt'
   char ','
   y <- parseInt'
-  return $ Point (x, y)
+  return $ (x, y)
 
 parseInt' :: Parsec String Int
 parseInt' = do
