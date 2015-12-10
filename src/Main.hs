@@ -153,6 +153,14 @@ noVeto s = not . or $ map (flip isInfixOf s) ["ab", "cd", "pq", "xy"]
 
 p5_2 = p5 isNice2
 
+
+
+
+
+
+
+
+
 isNice2 s = and [dupes s, aba s]
 
 dupes (a:b:cs) = (a:b:[]) `isInfixOf` cs || dupes (b:cs)
@@ -162,6 +170,11 @@ aba (a:b:c:ds)
   | a == c = True
   | True = aba (b:c:ds)
 aba _ = False
+
+
+
+
+
 
 
 
@@ -253,7 +266,6 @@ p8_1 = do
   print mem
   print $ code - mem
 
-codeSize :: [a] -> Int
 codeSize = length
 
 memSize = do
@@ -270,6 +282,8 @@ escapedChar = do
            try (char 'x' >> hexDigitChar >> hexDigitChar)])
   return 1
 
+
+
 p8_2 = do
   input <- lines <$> readFile "puzzle8.txt"
   let raw = map length input
@@ -280,6 +294,16 @@ p8_2 = do
 p9_1 = do
   input <- lines <$> readFile "puzzle9.txt"
   print "later"
+
+
+
+
+
+
+
+
+
+
 
 -- Problem 10 --
 p10_1 = do
