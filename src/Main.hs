@@ -3,6 +3,7 @@ module Main where
 import Text.Megaparsec
 import Data.Either
 import Data.List
+import Data.Array.IO
 
 main :: IO ()
 main = p2_1
@@ -290,10 +291,28 @@ p8_2 = do
   print $ sum $ zipWith (-) encoded raw
 
 -- Problem 9 --
+data Distance = Distance { endpoints :: (String, String), dist :: Int }
+              deriving (Show)
+
 p9_1 = do
-  input <- lines <$> readFile "puzzle9.txt"
+  input <- rights <$> map (runParser parseDistance "") <$> lines <$> readFile "puzzle9.txt"
+  mapM_ setDistance input
   print "later"
 
+parseDistance :: Parsec String Distance
+parseDistance = do
+  pointA <- some letterChar
+  string " to "
+  pointB <- some letterChar
+  string " = "
+  distance <- read <$> some digitChar
+  return $ Distance (pointA, pointB) distance
+
+getLocations :: [Distance] -> [String]
+getLocations ds = nub $ concatMap ((\(a,b) -> [a,b]) . endpoints) ds
+
+setDistance :: Distance -> IO ()
+setDistance = undefined
 
 
 
