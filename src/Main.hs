@@ -310,7 +310,7 @@ data Trip = Trip { route :: [String], total :: Int }
 
 p9_1 = do
   (keys, arr) <- slurp9
-  distances <- mapM getDistance (permutations keys)
+  distances <- mapM (getTripLength arr) (permutations keys)
   let shortest = minimumBy (\a b -> compare (total a) (total b)) distances
   print shortest
 
@@ -319,7 +319,7 @@ slurp9 = do
   distances <- slurpLinesWith parseDistance "puzzle9.txt"
   let locNames = sort . nub . concatMap (\d -> [pointA d, pointB d]) $ distances
       locs = zipWith (\n i -> Location n i) locNames [0..]
-      numPairs = (length locs) ^ 2
+      numPairs = (length locs) ^ 2 - 1
   arr <- newArray (0, numPairs) 0
   mapM_ (setDistances arr locs) distances
   return (locs, arr)
@@ -328,11 +328,15 @@ setDistances :: IOArray Int Int -> [Location] -> Distance -> IO ()
 setDistances arr keyset (Distance a b d) = do
   let n = length keyset
       idxer = cityNum keyset
-  writeArray arr ((idxer a * n) + idxer b) d
+      flattr = coordFlatten n
+  writeArray arr (flattr (idxer a) (idxer b)) d
+  writeArray arr (flattr (idxer b) (idxer a)) d
+
+coordFlatten :: Int -> Int -> Int -> Int
+coordFlatten n r c = (n * r) + c
 
 cityNum :: [Location] -> String -> Int
 cityNum locs target = idx . head $ filter (\(Location n i) -> n == target) locs
-
 
 parseDistance :: Parsec String Distance
 parseDistance = do
@@ -343,8 +347,14 @@ parseDistance = do
   distance <- read <$> some digitChar
   return $ Distance pointA pointB distance
 
-getDistance :: [Location] -> IO Trip
-getDistance = undefined
+getTripLength :: IOArray Int Int -> [Location] -> IO Trip
+getTripLength arr locs = do
+  let hops = zip locs (tail locs)
+  dists <- mapM (getDistance arr) hops
+  return (Trip (map name locs) 0)
+
+getDistance :: IOArray Int Int -> (Location, Location) -> IO Int
+getDistance arr (a,b) = undefined
 
 
 
