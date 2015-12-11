@@ -8,6 +8,9 @@ import Data.Array.IO
 main :: IO ()
 main = p2_1
 
+slurpLinesWith parser fileName =
+  rights . map (runParser parser "") . lines <$> readFile fileName
+
 -- Problem 1 --
 p1_1 = do
   instructions <- readFile "puzzle1.txt"
@@ -290,18 +293,46 @@ p8_2 = do
       encoded = map (length . show) input
   print $ sum $ zipWith (-) encoded raw
 
+
+
+
+
+
+
+
 -- Problem 9 --
-data Distance = Distance { endpoints :: (String, String), dist :: Int }
-              deriving (Show)
-data Trip = Trip { route :: [String], distance :: Int }
+data Distance = Distance { pointA :: String, pointB :: String, dist :: Int }
+              deriving Show
+data Location = Location { name :: String, idx :: Int }
+              deriving Show
+data Trip = Trip { route :: [String], total :: Int }
+          deriving Show
 
 p9_1 = do
-  input <- rights <$> map (runParser parseDistance "") <$> lines <$> readFile "puzzle9.txt"
-  mapM_ setDistances input
-  let destinations = getLocations input
-      trips = map measure $ permutations destinations
-      tripLengths = minimumBy (\a b -> compare (distance a) (distance b)) trips
-  print "later"
+  (keys, arr) <- slurp9
+  distances <- mapM getDistance (permutations keys)
+  let shortest = minimumBy (\a b -> compare (total a) (total b)) distances
+  print shortest
+
+slurp9 :: IO ([Location], IOArray Int Int)
+slurp9 = do
+  distances <- slurpLinesWith parseDistance "puzzle9.txt"
+  let locNames = sort . nub . concatMap (\d -> [pointA d, pointB d]) $ distances
+      locs = zipWith (\n i -> Location n i) locNames [0..]
+      numPairs = (length locs) ^ 2
+  arr <- newArray (0, numPairs) 0
+  mapM_ (setDistances arr locs) distances
+  return (locs, arr)
+
+setDistances :: IOArray Int Int -> [Location] -> Distance -> IO ()
+setDistances arr keyset (Distance a b d) = do
+  let n = length keyset
+      idxer = cityNum keyset
+  writeArray arr ((idxer a * n) + idxer b) d
+
+cityNum :: [Location] -> String -> Int
+cityNum locs target = idx . head $ filter (\(Location n i) -> n == target) locs
+
 
 parseDistance :: Parsec String Distance
 parseDistance = do
@@ -310,16 +341,19 @@ parseDistance = do
   pointB <- some letterChar
   string " = "
   distance <- read <$> some digitChar
-  return $ Distance (pointA, pointB) distance
+  return $ Distance pointA pointB distance
 
-getLocations :: [Distance] -> [String]
-getLocations ds = nub $ concatMap ((\(a,b) -> [a,b]) . endpoints) ds
+getDistance :: [Location] -> IO Trip
+getDistance = undefined
 
-setDistances :: Distance -> IO ()
-setDistances = undefined
 
-measure :: [String] -> Trip
-measure = undefined
+
+
+
+
+
+
+
 
 
 
