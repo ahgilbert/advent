@@ -13,13 +13,13 @@ slurpLinesWith parser fileName =
 
 -- Problem 1 --
 p1_1 = do
-  instructions <- readFile "puzzle1.txt"
+  instructions <- readFile "data/puzzle1.txt"
   let up = length $ filter (== '(') instructions
       down = length $ filter (== ')') instructions
    in putStrLn . show $ up - down
 
 p1_2 = do
-  instructions <- readFile "puzzle1.txt"
+  instructions <- readFile "data/puzzle1.txt"
   print $ length instructions
   let faith = sumBraces instructions
       hope = length $ takeWhile (0 <=) faith
@@ -37,7 +37,7 @@ sumBraces instructions = scanl (\s c -> if c == '(' then s + 1 else s - 1) 0 ins
 
 -- Problem 2 --
 p2_1 = do
-  source <- readFile "puzzle2.txt"
+  source <- readFile "data/puzzle2.txt"
   let gifts = runParser (some giftParser) "" source
       faith = either (\_ -> []) (map allPairs) gifts
       hope = map (sum . wrap . sort . (map prod)) faith
@@ -74,7 +74,7 @@ perimeter (x,y) = (2 * x) + (2 * y)
 -- Problem 3 --
 
 p3_1 = do
-  input <- readFile "puzzle3.txt"
+  input <- readFile "data/puzzle3.txt"
   let houses = scanl followDirections (0,0) input
       uniqHouses = nub houses
     in print $ length uniqHouses
@@ -85,7 +85,7 @@ followDirections (x,y) 'v' = (x,y - 1)
 followDirections (x,y) '<' = (x - 1,y)
 
 p3_2 = do
-  input <- readFile "puzzle3.txt"
+  input <- readFile "data/puzzle3.txt"
   let aHouses = scanl followDirections (0,0) (evens input)
       bHouses = scanl followDirections (0,0) (odds input)
     in print $ length (nub $ aHouses ++ bHouses)
@@ -137,7 +137,7 @@ cathash key = undefined -- md5s . Str . (key ++) . show
 
 -- Problem 5 --
 p5 isNice = do
-  input <- lines <$> readFile "puzzle5.txt"
+  input <- lines <$> readFile "data/puzzle5.txt"
   let faith = filter isNice input
   print $ length faith
   --  mapM_ (putStrLn . show) faith
@@ -226,7 +226,7 @@ showGrid g = mapM_ putStrLn $ map show g
 
 
 slurpInstructions = do
-  rights . map (runParser parseInstruction "") . lines <$> readFile "puzzle6.txt"
+  rights . map (runParser parseInstruction "") . lines <$> readFile "data/puzzle6.txt"
 
 parseInstruction :: Parsec String Instruction
 parseInstruction = do
@@ -262,7 +262,7 @@ parseInt' = do
 
 -- Problem 8 --
 p8_1 = do
-  input <- lines <$> readFile "puzzle8.txt"
+  input <- lines <$> readFile "data/puzzle8.txt"
   let mem = sum $ map sum $ rights $ map (runParser memSize "") input
       code = sum $ map codeSize input
   print code
@@ -288,7 +288,7 @@ escapedChar = do
 
 
 p8_2 = do
-  input <- lines <$> readFile "puzzle8.txt"
+  input <- lines <$> readFile "data/puzzle8.txt"
   let raw = map length input
       encoded = map (length . show) input
   print $ sum $ zipWith (-) encoded raw
@@ -327,7 +327,7 @@ p9 = do
 
 slurp9 :: IO ([Location], IOArray Int Int)
 slurp9 = do
-  distances <- slurpLinesWith parseDistance "puzzle9.txt"
+  distances <- slurpLinesWith parseDistance "data/puzzle9.txt"
   let locNames = sort . nub . concatMap (\d -> [pointA d, pointB d]) $ distances
       locs = zipWith (\n i -> Location n i) locNames [0..]
       numPairs = (length locs) ^ 2 - 1
