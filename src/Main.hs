@@ -2,7 +2,6 @@ module Main where
 
 import Text.Megaparsec
 import Data.Either
-import Data.Hash.MD5
 import Data.List
 
 main :: IO ()
@@ -111,7 +110,7 @@ p4_1 = do
 
 p4_2 = print "similar"
 
-cathash key = md5s . Str . (key ++) . show
+cathash key = undefined -- md5s . Str . (key ++) . show
 
 
 
