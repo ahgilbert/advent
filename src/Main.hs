@@ -300,7 +300,8 @@ p8_2 = do
 
 
 
--- Problem 9 --
+-- Problem 9 (crying for better state management...) --
+
 data Distance = Distance { pointA :: String, pointB :: String, dist :: Int }
               deriving Show
 data Location = Location { name :: String, idx :: Int }
@@ -308,11 +309,21 @@ data Location = Location { name :: String, idx :: Int }
 data Trip = Trip { route :: [String], total :: Int }
           deriving Show
 
-p9_1 = do
+instance Ord Trip where
+  compare a b = compare (total a) (total b)
+instance Eq Trip where
+  a == b = total a == total b && route a == route b
+
+p9 = do
   (keys, arr) <- slurp9
   distances <- mapM (getTripLength arr) (permutations keys)
-  let shortest = minimumBy (\a b -> compare (total a) (total b)) distances
+  let shortest = minimum distances
+      longest = maximum distances
+  putStrLn "shortest:"
   print shortest
+  putStrLn ""
+  putStrLn "longest:"
+  print longest
 
 slurp9 :: IO ([Location], IOArray Int Int)
 slurp9 = do
@@ -350,11 +361,13 @@ parseDistance = do
 getTripLength :: IOArray Int Int -> [Location] -> IO Trip
 getTripLength arr locs = do
   let hops = zip locs (tail locs)
-  dists <- mapM (getDistance arr) hops
-  return (Trip (map name locs) 0)
+      n = length locs
+      idxer = coordFlatten n
+  dists <- mapM (getDistance arr n) hops
+  return (Trip (map name locs) (sum dists))
 
-getDistance :: IOArray Int Int -> (Location, Location) -> IO Int
-getDistance arr (a,b) = undefined
+getDistance :: IOArray Int Int -> Int -> (Location, Location) -> IO Int
+getDistance arr n (a,b) = readArray arr (coordFlatten n (idx a) (idx b))
 
 
 
