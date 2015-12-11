@@ -293,10 +293,14 @@ p8_2 = do
 -- Problem 9 --
 data Distance = Distance { endpoints :: (String, String), dist :: Int }
               deriving (Show)
+data Trip = Trip { route :: [String], distance :: Int }
 
 p9_1 = do
   input <- rights <$> map (runParser parseDistance "") <$> lines <$> readFile "puzzle9.txt"
-  mapM_ setDistance input
+  mapM_ setDistances input
+  let destinations = getLocations input
+      trips = map measure $ permutations destinations
+      tripLengths = minimumBy (\a b -> compare (distance a) (distance b)) trips
   print "later"
 
 parseDistance :: Parsec String Distance
@@ -311,8 +315,12 @@ parseDistance = do
 getLocations :: [Distance] -> [String]
 getLocations ds = nub $ concatMap ((\(a,b) -> [a,b]) . endpoints) ds
 
-setDistance :: Distance -> IO ()
-setDistance = undefined
+setDistances :: Distance -> IO ()
+setDistances = undefined
+
+measure :: [String] -> Trip
+measure = undefined
+
 
 
 
