@@ -7,12 +7,15 @@ import Data.Either
 import Data.List
 import Data.Word
 import Data.Array.IO
+import Data.Maybe
 
 main :: IO ()
 main = p2_1
 
 slurpLinesWith parser fileName =
   rights . map (runParser parser "") . lines <$> readFile fileName
+
+slurp filename = readFile $ "data/" ++ filename
 
 -- Problem 1 --
 p1_1 = do
@@ -468,3 +471,22 @@ nextString (c:cs) = (chr ((ord c) + 1)) : cs
 
 
 -- Problem 12 --
+p12 = do
+  input <- slurp "puzzle12.txt"
+  let faith = runParser parseJson "" input
+      hope = either (\_ -> 0) id (runParser parseJson "" input)
+  print hope
+
+parseJson :: Parsec String Int
+parseJson = do
+  faith <- some (choice [parseNum, asciiChar >> return 0])
+  return $ sum faith
+
+parseNum :: Parsec String Int
+parseNum = do
+  sign <- optional $ char '-'
+  num <- some digitChar
+  let n = read num :: Int
+  if (isJust sign)
+    then return ((-1) * n)
+    else return n
