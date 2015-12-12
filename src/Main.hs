@@ -1,8 +1,11 @@
 module Main where
 
 import Text.Megaparsec
+import Data.Bits
+import Data.Char
 import Data.Either
 import Data.List
+import Data.Word
 import Data.Array.IO
 
 main :: IO ()
@@ -145,14 +148,14 @@ p5 isNice = do
 p5_1 = p5 isNice1
 
 isNice1 :: String -> Bool
-isNice1 s = and [hasVowels s, hasDubs s, noVeto s]
+isNice1 s = and [hasVowels s, hasDubs s, noVeto ["ab", "cd", "pq", "xy"] s]
 
 hasVowels s = length (filter (\c -> elem c "aeiou") s) >= 3
 
 hasDubs s = any dubs $ zip s (tail s)
   where dubs (x,y) = x == y
 
-noVeto s = not . or $ map (flip isInfixOf s) ["ab", "cd", "pq", "xy"]
+noVeto blackList s = not . or $ map (flip isInfixOf s) blackList
 
 p5_2 = p5 isNice2
 
@@ -259,6 +262,8 @@ parseInt' = do
   return i
 
 -- Problem 7 --
+
+
 
 -- Problem 8 --
 p8_1 = do
@@ -404,3 +409,62 @@ breakDupes s@(a:_) =
 breakDupes _ = ([],[])
 
 translate s = show (length s) ++ [head s]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Problem 11 --
+p11 = do
+  let input = reverse "cqjxjnds" -- work with backwards strings because singly linked lists
+      pwStream = filter isValidPassword $ iterate nextString input
+  print $ map reverse $ take 2 pwStream
+
+isValidPassword :: String -> Bool
+isValidPassword s = hasStreak s && noBlacklist s && twoPair s
+
+-- find a descending streak, because we're looking at backwards strings
+hasStreak (a:b:c:ds)
+  | (ord a) - 1 == (ord b) && (ord b) - 1 == (ord c) = True
+  | True = hasStreak (b:c:ds)
+hasStreak _ = False
+
+noBlacklist = noVeto ["i", "o", "l"]
+
+twoPair s = 2 <= (length . nub $ findPairs s)
+
+findPairs (a:b:cs)
+  | a == b = (a:b:[]) : findPairs cs
+  | True = findPairs (b:cs)
+findPairs _ = []
+
+nextString :: String -> String
+nextString ('z':[]) = "aa"
+nextString ('z':cs) = 'a' : nextString cs
+nextString (c:cs) = (chr ((ord c) + 1)) : cs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Problem 12 --
