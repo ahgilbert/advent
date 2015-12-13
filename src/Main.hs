@@ -13,7 +13,7 @@ main :: IO ()
 main = p2_1
 
 slurpLinesWith parser fileName =
-  rights . map (runParser parser "") . lines <$> readFile fileName
+  rights . map (runParser parser "") . lines <$> readFile ("data/" ++ fileName)
 
 slurp filename = readFile $ "data/" ++ filename
 
@@ -264,11 +264,76 @@ parseInt' = do
   space
   return i
 
+
+
+
+
+
+
+
+
+
 -- Problem 7 --
+type Bus = Word16
+type WireId = String
+
+data Gate = And | Or | Not | RShift | LShift | Noop
+  deriving Show
+
+data Wire = Wire { label :: WireId, strength :: Either Bus (Gate, [WireId]) }
+  deriving Show
+
+p7 = do
+  input <- slurpLinesWith parseCircuit "puzzle7.txt"
+  print "ahg"
+
+parseCircuit :: Parsec String Wire
+parseCircuit = do
+  undefined
+  out <- parseSendTo
+  return $ Wire "a" (Left 1)
+
+parseWireId = do
+  ident <- some lowerChar
+  space
+  return ident
+
+parseConst :: Parsec String Bus
+parseConst = do
+  num <- read <$> some digitChar
+  space
+  return num
+
+parseGate :: Parsec String Gate
+parseGate = do
+  gate <- some upperChar
+  return $ getGate gate
+
+getGate "AND" = And
+getGate "OR" = Or
+getGate "NOT" = Not
+getGate "RShift" = RShift
+getGate "LShift" = LShift
+getGate _ = Noop
+
+parseSendTo = do
+  string "-> "
+  parseWireId
 
 
 
--- Problem 8 --
+
+
+
+
+
+
+
+
+
+
+
+  -- Problem 8 --
 p8_1 = do
   input <- lines <$> readFile "data/puzzle8.txt"
   let mem = sum $ map sum $ rights $ map (runParser memSize "") input
@@ -335,7 +400,7 @@ p9 = do
 
 slurp9 :: IO ([Location], IOArray Int Int)
 slurp9 = do
-  distances <- slurpLinesWith parseDistance "data/puzzle9.txt"
+  distances <- slurpLinesWith parseDistance "puzzle9.txt"
   let locNames = sort . nub . concatMap (\d -> [pointA d, pointB d]) $ distances
       locs = zipWith (\n i -> Location n i) locNames [0..]
       numPairs = (length locs) ^ 2 - 1
