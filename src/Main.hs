@@ -277,48 +277,72 @@ parseInt' = do
 type Bus = Word16
 type WireId = String
 
-data Gate = And | Or | Not | RShift | LShift | Noop
-  deriving Show
+data CircuitDeclaration = Circuit { lhs :: LHS, rhs :: WireId }
+                        deriving Show
 
-data Wire = Wire { label :: WireId, strength :: Either Bus (Gate, [WireId]) }
-  deriving Show
+data LHS = Const { v :: Input }
+         | Unary { i :: Input, uOp :: UnaryGate }
+         | Binary { a :: Input, b :: Input, bOp :: BinaryGate }
+         deriving Show
 
-p7 = do
-  input <- slurpLinesWith parseCircuit "puzzle7.txt"
-  print "ahg"
+data UnaryGate = Not
+               deriving Show
 
-parseCircuit :: Parsec String Wire
-parseCircuit = do
-  undefined
-  out <- parseSendTo
-  return $ Wire "a" (Left 1)
+data BinaryGate = And | Or | LShift | RShift
+                deriving Show
 
-parseWireId = do
-  ident <- some lowerChar
-  space
-  return ident
+data Input = Fixed { strength :: Bus }
+           | Wire { wire :: WireId }
+           deriving Show
 
-parseConst :: Parsec String Bus
+parseInput = choice [parseConst, parseWireId]
+
+parseConst :: Parsec String Input
 parseConst = do
-  num <- read <$> some digitChar
+  v <- read <$> some digitChar
+  return (Fixed v)
+
+parseWireId :: Parsec String Input
+parseWireId = do
+  name <- some lowerChar
+  return (Wire name)
+
+parseUnaryGate :: Parsec String UnaryGate
+parseUnaryGate = string "NOT" >> return Not
+
+parseBinaryGate :: Parsec String BinaryGate
+parseBinaryGate = some upperChar >>= getOp
+  where getOp "AND" = return And
+        getOp "OR" = return Or
+        getOp "LSHIFT" = return LShift
+        getOp "RSHIFT" = return RShift
+        getOp w = fail ("unrecognized binary operation: " ++ w)
+
+parseLHS :: Parsec String LHS
+parseLHS = do
+  ret <- choice [try parseConstExp, try parseUnaryExp, try parseBinaryExp]
+  string " -> "
+  return ret
+
+parseConstExp :: Parsec String LHS
+parseConstExp = do
+  ret <- parseConst
+  return $ Const (Fixed 9)
+
+parseUnaryExp = do
+  op <- parseUnaryGate
   space
-  return num
+  i <- parseInput
+  return $ Unary i op
 
-parseGate :: Parsec String Gate
-parseGate = do
-  gate <- some upperChar
-  return $ getGate gate
+parseBinaryExp = do
+  a <- parseInput
+  space
+  op <- parseBinaryGate
+  space
+  b <- parseInput
+  return $ Binary a b op
 
-getGate "AND" = And
-getGate "OR" = Or
-getGate "NOT" = Not
-getGate "RShift" = RShift
-getGate "LShift" = LShift
-getGate _ = Noop
-
-parseSendTo = do
-  string "-> "
-  parseWireId
 
 
 
