@@ -579,3 +579,5 @@ parseNum = do
   if (isJust sign)
     then return ((-1) * n)
     else return n
+
+-- Problem 13, aka "Problem 9 eats its tail" --
