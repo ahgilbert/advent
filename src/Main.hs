@@ -277,7 +277,7 @@ parseInt' = do
 type Bus = Word16
 type WireId = String
 
-data CircuitDeclaration = Circuit { lhs :: LHS, rhs :: WireId }
+data Circuit = Circuit { lhs :: LHS, rhs :: WireId }
                         deriving Show
 
 data LHS = Const { v :: Input }
@@ -295,23 +295,12 @@ data Input = Fixed { strength :: Bus }
            | Wire { wire :: WireId }
            deriving Show
 
-p7 = do
+p7 target = do
   input <- slurpLinesWith parseCircuitDeclaration "puzzle7.txt"
-  let a = filter (\c -> (rhs c) == "ls") input
-  mapM print $ take 10 input
+  let a = filter (\c -> (rhs c) == target) input
   print a
 
-
-
-
-
-
-
-
-
-
-
-parseCircuitDeclaration :: Parsec String CircuitDeclaration
+parseCircuitDeclaration :: Parsec String Circuit
 parseCircuitDeclaration = do
   lhs <- parseLHS
   rhs <- parseRHS
@@ -344,14 +333,14 @@ parseBinaryGate = some upperChar >>= getOp
 
 parseLHS :: Parsec String LHS
 parseLHS = do
-  ret <- choice [try parseConstExp, try parseUnaryExp, try parseBinaryExp]
+  ret <- choice [try parseBinaryExp, try parseUnaryExp, try parseConstExp]
   string " -> "
   return ret
 
 parseConstExp :: Parsec String LHS
 parseConstExp = do
-  ret <- parseConst
-  return $ Const (Fixed 9)
+  v <- read <$> some digitChar
+  return (Const (Fixed v))
 
 parseUnaryExp = do
   op <- parseUnaryGate
@@ -636,3 +625,84 @@ parseNum = do
      A Trip is a SeatingChart
      I must consider returning home
 -}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Problem 14 - Reindeer Olympics --
+data Reindeer = R { moniker :: String,
+                    moving :: (Int, Int),
+                    rest :: Int }
+              deriving (Show)
+
+timer = 2503
+
+p14_1 = do
+  input <- slurpLinesWith parseReindeer "puzzle14.txt"
+  let race = map (\r -> (r, getReindeerLoc r timer)) input
+      race' = sortBy (\a b -> compare (snd b) (snd a)) race
+  mapM print race'
+
+p14_2 = do
+  deer <- slurpLinesWith parseReindeer "puzzle14.txt"
+  let slices = map (getReindeerLocs deer) [1..timer]
+      leaders = map scoreTimeslice slices
+      points = map (foldl (+) 0) (transpose leaders)
+  print $ sort points
+
+scoreTimeslice :: [Int] -> [Int]
+scoreTimeslice distances =
+  let maxDistance = maximum distances
+  in map (\d -> if d == maxDistance then 1 else 0) distances
+
+parseReindeer :: Parsec String Reindeer
+parseReindeer = do
+  moniker <- some letterChar
+  string " can fly "
+  speed <- parseInt
+  string " km/s for "
+  stamina <- parseInt
+  string " seconds, but then must rest for "
+  rest <- parseInt
+  return (R moniker (speed, stamina) rest)
+
+getReindeerLocs :: [Reindeer] -> Int -> [Int]
+getReindeerLocs rs clock = map (flip getReindeerLoc clock) rs
+
+getReindeerLoc :: Reindeer -> Int -> Int
+getReindeerLoc deer@(R n (speed, stamina) rest) clock
+  | clock > (stamina + rest) =
+    let burstDist = speed * stamina
+        intervals = quot clock (stamina + rest)
+        partial = rem clock (stamina + rest)
+    in (burstDist * intervals) + (getReindeerLoc deer partial)
+  | True = (speed * (min stamina clock))
+
+isFlying :: Reindeer -> Int -> Bool
+isFlying r@(R _ (_, stamina) rest) clock =
+  if (clock <= stamina)
+  then True
+  else not $ isResting r (clock - stamina)
+
+isResting :: Reindeer -> Int -> Bool
+isResting r@(R _ (_, stamina) rest) clock =
+  if (clock <= rest)
+  then True
+  else not $ isFlying r (clock - rest)
