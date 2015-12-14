@@ -295,6 +295,30 @@ data Input = Fixed { strength :: Bus }
            | Wire { wire :: WireId }
            deriving Show
 
+p7 = do
+  input <- slurpLinesWith parseCircuitDeclaration "puzzle7.txt"
+  let a = filter (\c -> (rhs c) == "ls") input
+  mapM print $ take 10 input
+  print a
+
+
+
+
+
+
+
+
+
+
+
+parseCircuitDeclaration :: Parsec String CircuitDeclaration
+parseCircuitDeclaration = do
+  lhs <- parseLHS
+  rhs <- parseRHS
+  return $ Circuit lhs rhs
+
+parseRHS = some lowerChar
+
 parseInput = choice [parseConst, parseWireId]
 
 parseConst :: Parsec String Input
@@ -342,6 +366,31 @@ parseBinaryExp = do
   space
   b <- parseInput
   return $ Binary a b op
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -581,3 +630,9 @@ parseNum = do
     else return n
 
 -- Problem 13, aka "Problem 9 eats its tail" --
+
+{- same as traveling salesman, but:
+     A Location is a Guest
+     A Trip is a SeatingChart
+     I must consider returning home
+-}
