@@ -295,10 +295,10 @@ data Input = Fixed { strength :: Bus }
            | Wire { wire :: WireId }
            deriving Show
 
-p7 target = do
+p7 = do
   input <- slurpLinesWith parseCircuitDeclaration "puzzle7.txt"
-  let a = filter (\c -> (rhs c) == target) input
-  print a
+  let wires = zip [1..] $ sort $ map rhs input
+  print $ length wires
 
 parseCircuitDeclaration :: Parsec String Circuit
 parseCircuitDeclaration = do
