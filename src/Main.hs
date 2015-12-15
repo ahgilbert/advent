@@ -644,6 +644,11 @@ p13_1 = do
   best <- p13
   print $ scoreChart best
 
+p13_2 = do
+  best <- p13
+  let slots = map (\(a,b) -> a + b) (joy best)
+  print $ sum slots - minimum slots
+
 p13 = do
   (guests, arr) <- slurp13 "puzzle13.txt"
   harmonies <- mapM (getChartJoy arr) (permutations guests)
