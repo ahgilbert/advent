@@ -303,10 +303,8 @@ p7 target = do
 parseCircuitDeclaration :: Parsec String Circuit
 parseCircuitDeclaration = do
   lhs <- parseLHS
-  rhs <- parseRHS
+  rhs <- some lowerChar
   return $ Circuit lhs rhs
-
-parseRHS = some lowerChar
 
 parseInput = choice [parseConst, parseWireId]
 
@@ -333,9 +331,14 @@ parseBinaryGate = some upperChar >>= getOp
 
 parseLHS :: Parsec String LHS
 parseLHS = do
-  ret <- choice [try parseBinaryExp, try parseUnaryExp, try parseConstExp]
+  ret <- choice [try parseBinaryExp, try parseUnaryExp, try parseConstExp, try parseSolder]
   string " -> "
   return ret
+
+parseSolder :: Parsec String LHS
+parseSolder = do
+  v <- some lowerChar
+  return (Const (Wire v))
 
 parseConstExp :: Parsec String LHS
 parseConstExp = do
