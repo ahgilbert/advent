@@ -630,39 +630,34 @@ parseNum = do
 -}
 data FriendQuotient = FQ { guestA :: String, guestB :: String, affinity :: Int }
               deriving Show
-data SeatingChart = SeatingChart { chart :: [String], joy :: Int }
+data SeatingChart = SeatingChart { chart :: [Location], joy :: [(Int,Int)] }
           deriving Show
 
 instance Ord SeatingChart where
-  compare a b = compare (joy a) (joy b)
+  compare a b = compare (joySum (joy a)) (joySum (joy b))
 instance Eq SeatingChart where
-  a == b = joy a == joy b && chart a == chart b
+  a == b = joy a == joy b && ((map name) . chart) a == ((map name) . chart) b
+
+joySum js = sum $ map (\(a,b) -> a + b) js
+
+p13_1 = do
+  best <- p13
+  print $ scoreChart best
 
 p13 = do
-  (guests, arr) <- slurp13
+  (guests, arr) <- slurp13 "puzzle13.txt"
   harmonies <- mapM (getChartJoy arr) (permutations guests)
   let best = maximum harmonies
-  harmonies2 <- mapM (getChartJoy arr) $ map (inject (Location "Alan" (length guests)) (getLocs guests best)) [0..length best]
-  putStrLn ""
-  putStrLn "part 1 best:"
-  print best
-  let best2 = maximum harmonies2
-  print best2
-
-getLocs :: [Location] -> [String] -> [Location]
-getLocs ls ns = map (\n ->
-                      (head . (filter (\l -> name l == n) ls)))
-                ns
+  return best
 
 inject :: Location -> [Location] -> Int -> [Location]
 inject name list idx =
   take idx list ++ [name] ++ drop idx list
 
-slurp13 :: IO ([Location], IOArray Int Int)
-slurp13 = do
-  fqs <- slurpLinesWith parseFQ "puzzle13.txt"
+slurp13 :: String -> IO ([Location], IOArray Int Int)
+slurp13 filename = do
+  fqs <- slurpLinesWith parseFQ filename
   let guestNames = sort . nub . concatMap (\d -> [guestA d, guestB d]) $ fqs
-      guestNames' = "Alan" : guestNames
       locs = zipWith (\n i -> Location n i) guestNames [0..]
       numPairs = (length locs) ^ 2 - 1
   arr <- newArray (0, numPairs) 0
@@ -701,15 +696,17 @@ getChartJoy arr locs = do
   let hops = (last locs, head locs) : zip locs (tail locs)
       n = length locs
       idxer = coordFlatten n
-  fqs <- mapM (getFQs arr n) hops
-  return (SeatingChart (map name locs) (sum fqs))
+  fqs <- mapM (getFQs arr idxer) hops
+  return (SeatingChart locs fqs)
 
-getFQs :: IOArray Int Int -> Int -> (Location, Location) -> IO Int
-getFQs arr n (a,b) = do
-  atob <- readArray arr (coordFlatten n (idx a) (idx b))
-  btoa <- readArray arr (coordFlatten n (idx b) (idx a))
-  return $ atob + btoa
+scoreChart :: SeatingChart -> Int
+scoreChart c = sum $ map (\(a,b) -> a + b) (joy c)
 
+getFQs :: IOArray Int Int -> (Int -> Int -> Int) -> (Location, Location) -> IO (Int, Int)
+getFQs arr idxer (a,b) = do
+  atob <- readArray arr $ idxer (idx a) (idx b)
+  btoa <- readArray arr $ idxer (idx b) (idx a)
+  return $ (atob, btoa)
 
 
 
