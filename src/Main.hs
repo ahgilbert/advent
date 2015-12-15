@@ -623,11 +623,6 @@ parseNum = do
 
 -- Problem 13, aka "Problem 9 eats its tail" --
 
-{- same as travelling santa, but:
-     A Location is a Guest
-     A Trip is a SeatingChart
-     I must consider returning home
--}
 data FriendQuotient = FQ { guestA :: String, guestB :: String, affinity :: Int }
               deriving Show
 data SeatingChart = SeatingChart { chart :: [Location], joy :: [(Int,Int)] }
