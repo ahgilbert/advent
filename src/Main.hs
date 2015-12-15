@@ -623,18 +623,92 @@ parseNum = do
 
 -- Problem 13, aka "Problem 9 eats its tail" --
 
-{- same as traveling salesman, but:
+{- same as travelling santa, but:
      A Location is a Guest
      A Trip is a SeatingChart
      I must consider returning home
 -}
+data FriendQuotient = FQ { guestA :: String, guestB :: String, affinity :: Int }
+              deriving Show
+data SeatingChart = SeatingChart { chart :: [String], joy :: Int }
+          deriving Show
 
+instance Ord SeatingChart where
+  compare a b = compare (joy a) (joy b)
+instance Eq SeatingChart where
+  a == b = joy a == joy b && chart a == chart b
 
+p13 = do
+  (guests, arr) <- slurp13
+  harmonies <- mapM (getChartJoy arr) (permutations guests)
+  let best = maximum harmonies
+  harmonies2 <- mapM (getChartJoy arr) $ map (inject (Location "Alan" (length guests)) (getLocs guests best)) [0..length best]
+  putStrLn ""
+  putStrLn "part 1 best:"
+  print best
+  let best2 = maximum harmonies2
+  print best2
 
+getLocs :: [Location] -> [String] -> [Location]
+getLocs ls ns = map (\n ->
+                      (head . (filter (\l -> name l == n) ls)))
+                ns
 
+inject :: Location -> [Location] -> Int -> [Location]
+inject name list idx =
+  take idx list ++ [name] ++ drop idx list
 
+slurp13 :: IO ([Location], IOArray Int Int)
+slurp13 = do
+  fqs <- slurpLinesWith parseFQ "puzzle13.txt"
+  let guestNames = sort . nub . concatMap (\d -> [guestA d, guestB d]) $ fqs
+      guestNames' = "Alan" : guestNames
+      locs = zipWith (\n i -> Location n i) guestNames [0..]
+      numPairs = (length locs) ^ 2 - 1
+  arr <- newArray (0, numPairs) 0
+  mapM_ (setFQs arr locs) fqs
+  return (locs, arr)
 
+setFQs :: IOArray Int Int -> [Location] -> FriendQuotient -> IO ()
+setFQs arr keyset (FQ a b fq) = do
+  let n = length keyset
+      idxer = guestNum keyset
+      flattr = coordFlatten n
+  writeArray arr (flattr (idxer a) (idxer b)) fq
 
+guestNum :: [Location] -> String -> Int
+guestNum locs target = idx . head $ filter (\(Location n i) -> n == target) locs
+
+parseFQ :: Parsec String FriendQuotient
+parseFQ = do
+  guestA <- some letterChar
+  string " would "
+  fq <- parseGainLoss
+  string " happiness units by sitting next to "
+  guestB <- some letterChar
+  return $ FQ guestA guestB fq
+
+parseGainLoss = do
+  sign <- choice [string "gain", string "lose"]
+  space
+  amp <- parseInt
+  return $ if (sign == "gain")
+           then amp
+           else (-1) * amp
+
+getChartJoy :: IOArray Int Int -> [Location] -> IO SeatingChart
+getChartJoy arr locs = do
+  let hops = (last locs, head locs) : zip locs (tail locs)
+      n = length locs
+      idxer = coordFlatten n
+  fqs <- mapM (getFQs arr n) hops
+  return (SeatingChart (map name locs) (sum fqs))
+
+getFQs :: IOArray Int Int -> Int -> (Location, Location) -> IO Int
+getFQs arr n (a,b) = do
+  atob <- readArray arr (coordFlatten n (idx a) (idx b))
+  btoa <- readArray arr (coordFlatten n (idx b) (idx a))
+  return $ atob + btoa
 
 
 
