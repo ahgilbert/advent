@@ -292,7 +292,44 @@ data Input = Fixed { strength :: Bus }
            | Wire { wire :: WireId }
            deriving Show
 data ST = ST { cs :: [Circuit], ws :: [(Int,WireId)], arr :: IOArray Int Bus }
-type P7 = StateT ST IO
+
+faith = do
+  cs <- slurpLinesWith parseCircuitDeclaration "7.txt"
+--  arr <- newArray (0, length cs) Nothing :: IOArray Int (Maybe Int)
+  return ()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 p7 = do
   input <- slurpLinesWith parseCircuitDeclaration "7.txt"
