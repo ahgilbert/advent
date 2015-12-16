@@ -8,9 +8,10 @@ import Data.List
 import Data.Word
 import Data.Array.IO
 import Data.Maybe
+import Control.Monad.State.Strict
 
 main :: IO ()
-main = p2_1
+main = p7
 
 slurpLinesWith parser fileName =
   rights . map (runParser parser "") . lines <$> readFile ("data/" ++ fileName)
@@ -277,7 +278,7 @@ parseInt' = do
 type Bus = Word16
 type WireId = String
 
-data Circuit = Circuit { lhs :: LHS, rhs :: WireId }
+data Circuit = C { lhs :: LHS, rhs :: WireId }
                         deriving Show
 
 data LHS = Const { v :: Input }
@@ -295,16 +296,44 @@ data Input = Fixed { strength :: Bus }
            | Wire { wire :: WireId }
            deriving Show
 
+data P7State = S { cs :: [Circuit], ws :: [(Int,WireId)], arr :: IOArray Int Bus }
+
+type P7 = StateT P7State IO
+
 p7 = do
   input <- slurpLinesWith parseCircuitDeclaration "puzzle7.txt"
   let wires = zip [1..] $ sort $ map rhs input
-  print $ length wires
+  print $ wireHelper input "a"
+
+getWire :: [Circuit] -> WireId -> Circuit
+getWire cs name = head $ (filter (\c -> name == rhs c)) cs
+
+executeC :: [Circuit] -> Circuit -> Bus
+executeC = undefined
+
+executeC' :: [Circuit] -> Circuit -> Bus
+executeC' cs (C (Const (Fixed v)) _) = v
+executeC' cs (C (Const (Wire w)) _) = executeC cs (getWire cs w)
+executeC' cs (C (Unary (Fixed v) Not) _) = complement v
+executeC' cs (C (Unary (Wire w) Not) _) = complement (wireHelper cs w)
+executeC' cs (C (Binary (Fixed v1) (Fixed v2) op) _) = (getOp op) v1 v2
+executeC' cs (C (Binary (Wire w) (Fixed v) op) _) = (getOp op) (wireHelper cs w) v
+executeC' cs (C (Binary (Fixed v) (Wire w) op) _) = (getOp op) v (wireHelper cs w)
+executeC' cs (C (Binary (Wire w1) (Wire w2) op) _) = (getOp op) (wireHelper cs w1) (wireHelper cs w2)
+
+wireHelper cs w = executeC cs (getWire cs w)
+
+getOp :: BinaryGate -> Bus -> Bus -> Bus
+getOp And a b = a .&. b
+getOp Or a b= a .|. b
+getOp LShift a b = shiftL a (fromIntegral b)
+getOp RShift a b = shiftR a (fromIntegral b)
 
 parseCircuitDeclaration :: Parsec String Circuit
 parseCircuitDeclaration = do
   lhs <- parseLHS
   rhs <- some lowerChar
-  return $ Circuit lhs rhs
+  return $ C lhs rhs
 
 parseInput = choice [parseConst, parseWireId]
 
@@ -358,8 +387,6 @@ parseBinaryExp = do
   space
   b <- parseInput
   return $ Binary a b op
-
-
 
 
 
@@ -609,7 +636,7 @@ p12 = do
 
 parseJson :: Parsec String Int
 parseJson = do
-  faith <- some (choice [parseNum, asciiChar >> return 0])
+  faith <- some (choice [parseNum, noneOf "{[]}" >> return 0])
   return $ sum faith
 
 parseNum :: Parsec String Int
@@ -620,6 +647,23 @@ parseNum = do
   if (isJust sign)
     then return ((-1) * n)
     else return n
+
+parseList = between (char '[') (char ']') parseJson
+
+parseMap = between (char '{') (char '}') parseMapInnards
+
+parseMapInnards = do
+  choice [parseList, parseMap]
+
+parseRed :: Parsec String String
+parseRed = string ":\"red\""
+
+goodMap = "{\"a\":12,\"b\":\"food\",\"c\":90}"
+badMap = "{\"a\":12,\"b\":\"red\",\"c\":90}"
+
+
+
+
 
 -- Problem 13, aka "Problem 9 eats its tail" --
 
