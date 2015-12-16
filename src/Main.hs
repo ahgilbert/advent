@@ -298,11 +298,19 @@ faith filename = do
   cs <- zip [1..] <$> slurpLinesWith parseCircuitDeclaration filename
   let cs' = map (\(i,c) -> (i, rhs c, c)) cs
   arr <- newArray (0, length cs) (Nothing) :: IO (IOArray Int (Maybe Bus))
-  return (ST cs' arr)
+  let x = runState (hope (getWire cs' "a")) (ST cs' arr)
+  return ()
 
-hope = do
-  st <- faith "7.txt"
-  print "ahg"
+hope c = undefined
+{-  (cs, arr) <- get
+  v <- readArray arr (fst c)
+  result <- if (isJust v)
+            then return fromJust v
+            else return $ runState (runCircuit c) cs
+  return ()
+-}
+
+runCircuit c = undefined
 
 
 
