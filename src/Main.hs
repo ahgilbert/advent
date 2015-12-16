@@ -291,12 +291,18 @@ data BinaryGate = And | Or | LShift | RShift
 data Input = Fixed { strength :: Bus }
            | Wire { wire :: WireId }
            deriving Show
-data ST = ST { cs :: [Circuit], ws :: [(Int,WireId)], arr :: IOArray Int Bus }
+type CircuitWithMetadata = (Integer, WireId, Circuit)
+data ST = ST { cs :: [CircuitWithMetadata], arr :: IOArray Int (Maybe Bus) }
 
-faith = do
-  cs <- slurpLinesWith parseCircuitDeclaration "7.txt"
---  arr <- newArray (0, length cs) Nothing :: IOArray Int (Maybe Int)
-  return ()
+faith filename = do
+  cs <- zip [1..] <$> slurpLinesWith parseCircuitDeclaration filename
+  let cs' = map (\(i,c) -> (i, rhs c, c)) cs
+  arr <- newArray (0, length cs) (Nothing) :: IO (IOArray Int (Maybe Bus))
+  return (ST cs' arr)
+
+hope = do
+  st <- faith "7.txt"
+  print "ahg"
 
 
 
