@@ -9,6 +9,7 @@ import Data.Word
 import Data.Array.IO
 import Data.Maybe
 import Control.Monad.State.Strict
+import Control.Monad.Trans
 
 main :: IO ()
 main = p7
@@ -20,13 +21,13 @@ slurp filename = readFile $ "data/" ++ filename
 
 -- Problem 1 --
 p1_1 = do
-  instructions <- readFile "data/puzzle1.txt"
+  instructions <- readFile "data/1.txt"
   let up = length $ filter (== '(') instructions
       down = length $ filter (== ')') instructions
    in putStrLn . show $ up - down
 
 p1_2 = do
-  instructions <- readFile "data/puzzle1.txt"
+  instructions <- readFile "data/1.txt"
   print $ length instructions
   let faith = sumBraces instructions
       hope = length $ takeWhile (0 <=) faith
@@ -44,7 +45,7 @@ sumBraces instructions = scanl (\s c -> if c == '(' then s + 1 else s - 1) 0 ins
 
 -- Problem 2 --
 p2_1 = do
-  source <- readFile "data/puzzle2.txt"
+  source <- readFile "data/2.txt"
   let gifts = runParser (some giftParser) "" source
       faith = either (\_ -> []) (map allPairs) gifts
       hope = map (sum . wrap . sort . (map prod)) faith
@@ -81,7 +82,7 @@ perimeter (x,y) = (2 * x) + (2 * y)
 -- Problem 3 --
 
 p3_1 = do
-  input <- readFile "data/puzzle3.txt"
+  input <- readFile "data/3.txt"
   let houses = scanl followDirections (0,0) input
       uniqHouses = nub houses
     in print $ length uniqHouses
@@ -92,7 +93,7 @@ followDirections (x,y) 'v' = (x,y - 1)
 followDirections (x,y) '<' = (x - 1,y)
 
 p3_2 = do
-  input <- readFile "data/puzzle3.txt"
+  input <- readFile "data/3.txt"
   let aHouses = scanl followDirections (0,0) (evens input)
       bHouses = scanl followDirections (0,0) (odds input)
     in print $ length (nub $ aHouses ++ bHouses)
@@ -144,7 +145,7 @@ cathash key = undefined -- md5s . Str . (key ++) . show
 
 -- Problem 5 --
 p5 isNice = do
-  input <- lines <$> readFile "data/puzzle5.txt"
+  input <- lines <$> readFile "data/5.txt"
   let faith = filter isNice input
   print $ length faith
   --  mapM_ (putStrLn . show) faith
@@ -233,7 +234,7 @@ showGrid g = mapM_ putStrLn $ map show g
 
 
 slurpInstructions = do
-  rights . map (runParser parseInstruction "") . lines <$> readFile "data/puzzle6.txt"
+  rights . map (runParser parseInstruction "") . lines <$> readFile "data/6.txt"
 
 parseInstruction :: Parsec String Instruction
 parseInstruction = do
@@ -277,31 +278,24 @@ parseInt' = do
 -- Problem 7 --
 type Bus = Word16
 type WireId = String
-
 data Circuit = C { lhs :: LHS, rhs :: WireId }
                         deriving Show
-
 data LHS = Const { v :: Input }
          | Unary { i :: Input, uOp :: UnaryGate }
          | Binary { a :: Input, b :: Input, bOp :: BinaryGate }
          deriving Show
-
 data UnaryGate = Not
                deriving Show
-
 data BinaryGate = And | Or | LShift | RShift
                 deriving Show
-
 data Input = Fixed { strength :: Bus }
            | Wire { wire :: WireId }
            deriving Show
-
-data P7State = S { cs :: [Circuit], ws :: [(Int,WireId)], arr :: IOArray Int Bus }
-
-type P7 = StateT P7State IO
+data ST = ST { cs :: [Circuit], ws :: [(Int,WireId)], arr :: IOArray Int Bus }
+type P7 = StateT ST IO
 
 p7 = do
-  input <- slurpLinesWith parseCircuitDeclaration "puzzle7.txt"
+  input <- slurpLinesWith parseCircuitDeclaration "7.txt"
   let wires = zip [1..] $ sort $ map rhs input
   print $ wireHelper input "a"
 
@@ -427,7 +421,7 @@ parseBinaryExp = do
 
   -- Problem 8 --
 p8_1 = do
-  input <- lines <$> readFile "data/puzzle8.txt"
+  input <- lines <$> readFile "data/8.txt"
   let mem = sum $ map sum $ rights $ map (runParser memSize "") input
       code = sum $ map codeSize input
   print code
@@ -453,7 +447,7 @@ escapedChar = do
 
 
 p8_2 = do
-  input <- lines <$> readFile "data/puzzle8.txt"
+  input <- lines <$> readFile "data/8.txt"
   let raw = map length input
       encoded = map (length . show) input
   print $ sum $ zipWith (-) encoded raw
@@ -492,7 +486,7 @@ p9 = do
 
 slurp9 :: IO ([Location], IOArray Int Int)
 slurp9 = do
-  distances <- slurpLinesWith parseDistance "puzzle9.txt"
+  distances <- slurpLinesWith parseDistance "9.txt"
   let locNames = sort . nub . concatMap (\d -> [pointA d, pointB d]) $ distances
       locs = zipWith (\n i -> Location n i) locNames [0..]
       numPairs = (length locs) ^ 2 - 1
@@ -629,7 +623,7 @@ nextString (c:cs) = (chr ((ord c) + 1)) : cs
 
 -- Problem 12 --
 p12 = do
-  input <- slurp "puzzle12.txt"
+  input <- slurp "12.txt"
   let faith = runParser parseJson "" input
       hope = either (\_ -> 0) id (runParser parseJson "" input)
   print hope
@@ -689,7 +683,7 @@ p13_2 = do
   print $ sum slots - minimum slots
 
 p13 = do
-  (guests, arr) <- slurp13 "puzzle13.txt"
+  (guests, arr) <- slurp13 "13.txt"
   harmonies <- mapM (getChartJoy arr) (permutations guests)
   let best = maximum harmonies
   return best
@@ -773,13 +767,13 @@ data Reindeer = R { moniker :: String,
 timer = 2503
 
 p14_1 = do
-  input <- slurpLinesWith parseReindeer "puzzle14.txt"
+  input <- slurpLinesWith parseReindeer "14.txt"
   let race = map (\r -> (r, getReindeerLoc r timer)) input
       race' = sortBy (\a b -> compare (snd b) (snd a)) race
   mapM print race'
 
 p14_2 = do
-  deer <- slurpLinesWith parseReindeer "puzzle14.txt"
+  deer <- slurpLinesWith parseReindeer "14.txt"
   let slices = map (getReindeerLocs deer) [1..timer]
       leaders = map scoreTimeslice slices
       points = map (foldl (+) 0) (transpose leaders)
