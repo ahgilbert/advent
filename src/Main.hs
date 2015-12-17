@@ -291,71 +291,35 @@ data BinaryGate = And | Or | LShift | RShift
 data Input = Fixed { strength :: Bus }
            | Wire { wire :: WireId }
            deriving Show
-type CircuitWithMetadata = (Integer, WireId, Circuit)
-data ST = ST { cs :: [CircuitWithMetadata], arr :: IOArray Int (Maybe Bus) }
-{-
-faith filename = do
-  cs <- zip [1..] <$> slurpLinesWith parseCircuitDeclaration filename
-  let cs' = map (\(i,c) -> (i, rhs c, c)) cs
-  arr <- newArray (0, length cs) (Nothing) :: IO (IOArray Int (Maybe Bus))
-  let x = runState (hope (getWire cs' "a")) (ST cs' arr)
-  return ()
+data Circuit' = CMD { arrI :: Int, wid :: WireId, circuit :: Circuit }
+type P7Array = IOArray Int (Maybe Bus)
 
-hope c = undefined
-{-  (cs, arr) <- get
-  v <- readArray arr (fst c)
-  result <- if (isJust v)
-            then return fromJust v
-            else return $ runState (runCircuit c) cs
-  return ()
--}
-
-runCircuit c = undefined
-
-
-
-
-
-
--}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+data ST = ST { cs :: [Circuit'], arr :: P7Array }
 
 
 p7 = do
   input <- slurpLinesWith parseCircuitDeclaration "7.txt"
-  let wires = zip [1..] $ sort $ map rhs input
-  print $ wireHelper input "a"
+  let wires = zipWith (\c i -> CMD i (rhs c) c) input -- zip [1..] $ sort $ map rhs input
+  print $ "ahg" --wireHelper wires "a"
 
-getWire :: [Circuit] -> WireId -> Circuit
-getWire cs name = head $ (filter (\c -> name == rhs c)) cs
+getWire :: [Circuit'] -> WireId -> LHS
+getWire cs name = lhs $ circuit $ head $ filter (\c -> name == wid c) cs
 
-executeC :: [Circuit] -> Circuit -> Bus
+faith :: P7Array -> [Circuit'] -> Circuit' -> IO Bus
+faith arr cs c = do
+  cached <- readArray arr (arrI c)
+  val <- if (isJust cached)
+         then return $ fromJust cached
+         else executeC cs ((lhs . circuit) c)
+  if(isNothing cached)
+    then writeArray arr (arrI c) (Just val)
+    else return ()
+  return val
+
+executeC :: [Circuit'] -> LHS -> IO Bus
 executeC = undefined
 
+           {-
 executeC' :: [Circuit] -> Circuit -> Bus
 executeC' cs (C (Const (Fixed v)) _) = v
 executeC' cs (C (Const (Wire w)) _) = executeC cs (getWire cs w)
@@ -365,7 +329,9 @@ executeC' cs (C (Binary (Fixed v1) (Fixed v2) op) _) = (getOp op) v1 v2
 executeC' cs (C (Binary (Wire w) (Fixed v) op) _) = (getOp op) (wireHelper cs w) v
 executeC' cs (C (Binary (Fixed v) (Wire w) op) _) = (getOp op) v (wireHelper cs w)
 executeC' cs (C (Binary (Wire w1) (Wire w2) op) _) = (getOp op) (wireHelper cs w1) (wireHelper cs w2)
+-}
 
+wireHelper :: [Circuit'] -> WireId -> IO Bus
 wireHelper cs w = executeC cs (getWire cs w)
 
 getOp :: BinaryGate -> Bus -> Bus -> Bus
