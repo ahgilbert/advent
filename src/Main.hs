@@ -293,7 +293,7 @@ data Input = Fixed { strength :: Bus }
            deriving Show
 type CircuitWithMetadata = (Integer, WireId, Circuit)
 data ST = ST { cs :: [CircuitWithMetadata], arr :: IOArray Int (Maybe Bus) }
-
+{-
 faith filename = do
   cs <- zip [1..] <$> slurpLinesWith parseCircuitDeclaration filename
   let cs' = map (\(i,c) -> (i, rhs c, c)) cs
@@ -317,7 +317,7 @@ runCircuit c = undefined
 
 
 
-
+-}
 
 
 
@@ -869,3 +869,19 @@ isResting r@(R _ (_, stamina) rest) clock =
   if (clock <= rest)
   then True
   else not $ isFlying r (clock - rest)
+
+-- Problem 17 --
+
+p17 = do
+  scoops <- (reverse . sort) <$> slurpLinesWith parseInt "17.txt"
+  return $ getCombosSumming 150 scoops
+
+getCombosSumming target (n:ns)
+  | target == n = [[n]] ++ getCombosSumming target ns
+  | target < 0 = []
+  | True = withN ++ withoutN
+  where
+    withN = map (n:) (getCombosSumming (target -n) ns)
+    withoutN = getCombosSumming target ns
+getCombosSumming _ [] = []
+
