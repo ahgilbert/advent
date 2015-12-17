@@ -292,47 +292,44 @@ data Input = Fixed { strength :: Bus }
            | Wire { wire :: WireId }
            deriving Show
 data Circuit' = CMD { arrI :: Int, wid :: WireId, circuit :: Circuit }
+              deriving (Show)
 type P7Array = IOArray Int (Maybe Bus)
 
 data ST = ST { cs :: [Circuit'], arr :: P7Array }
 
 
 p7 = do
-  input <- slurpLinesWith parseCircuitDeclaration "7.txt"
-  let wires = zipWith (\c i -> CMD i (rhs c) c) input -- zip [1..] $ sort $ map rhs input
-  print $ "ahg" --wireHelper wires "a"
+  input <- slurpLinesWith parseCircuitDeclaration "7_2.txt"
+  let wires = zipWith (\c i -> CMD i (rhs c) c) input [1..] -- zip [1..] $ sort $ map rhs input
+  arr <- newArray (1, length wires) Nothing
+  answer <- faith arr wires "a"
+  print answer
 
 getWire :: [Circuit'] -> WireId -> LHS
 getWire cs name = lhs $ circuit $ head $ filter (\c -> name == wid c) cs
 
-faith :: P7Array -> [Circuit'] -> Circuit' -> IO Bus
-faith arr cs c = do
+faith :: P7Array -> [Circuit'] -> WireId -> IO Bus
+faith arr cs w = do
+  let c = head $ filter (\cmd -> wid cmd == w) cs
   cached <- readArray arr (arrI c)
   val <- if (isJust cached)
          then return $ fromJust cached
-         else executeC cs ((lhs . circuit) c)
-  if(isNothing cached)
-    then writeArray arr (arrI c) (Just val)
-    else return ()
+         else executeC arr cs ((lhs . circuit) c)
+  when (isNothing cached) $ writeArray arr (arrI c) (Just val)
   return val
 
-executeC :: [Circuit'] -> LHS -> IO Bus
-executeC = undefined
-
-           {-
-executeC' :: [Circuit] -> Circuit -> Bus
-executeC' cs (C (Const (Fixed v)) _) = v
-executeC' cs (C (Const (Wire w)) _) = executeC cs (getWire cs w)
-executeC' cs (C (Unary (Fixed v) Not) _) = complement v
-executeC' cs (C (Unary (Wire w) Not) _) = complement (wireHelper cs w)
-executeC' cs (C (Binary (Fixed v1) (Fixed v2) op) _) = (getOp op) v1 v2
-executeC' cs (C (Binary (Wire w) (Fixed v) op) _) = (getOp op) (wireHelper cs w) v
-executeC' cs (C (Binary (Fixed v) (Wire w) op) _) = (getOp op) v (wireHelper cs w)
-executeC' cs (C (Binary (Wire w1) (Wire w2) op) _) = (getOp op) (wireHelper cs w1) (wireHelper cs w2)
--}
-
-wireHelper :: [Circuit'] -> WireId -> IO Bus
-wireHelper cs w = executeC cs (getWire cs w)
+executeC :: P7Array -> [Circuit'] -> LHS -> IO Bus
+executeC arr cs (Const (Fixed v)) = return v
+executeC arr cs (Const (Wire w)) = executeC arr cs (getWire cs w)
+executeC arr cs (Unary (Fixed v) Not) = return $ complement v
+executeC arr cs (Unary (Wire w) Not) = complement <$> (faith arr cs w)
+executeC arr cs (Binary (Fixed v1) (Fixed v2) op) = return $ (getOp op) v1 v2
+executeC arr cs (Binary (Wire w) (Fixed v) op) = flip (getOp op) v <$> (faith arr cs w)
+executeC arr cs (Binary (Fixed v) (Wire w) op) = (getOp op) v <$> (faith arr cs w)
+executeC arr cs (Binary (Wire w1) (Wire w2) op) = do
+  a <- faith arr cs w1
+  b <- faith arr cs w2
+  return $ (getOp op) a b
 
 getOp :: BinaryGate -> Bus -> Bus -> Bus
 getOp And a b = a .&. b
