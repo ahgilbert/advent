@@ -10,7 +10,6 @@ import Data.Array.IO
 import Data.Maybe
 import Control.Monad.State.Strict
 import Control.Monad.Trans
-import P15
 
 main :: IO ()
 main = p7
@@ -303,14 +302,14 @@ p7 = do
   input <- slurpLinesWith parseCircuitDeclaration "7_2.txt"
   let wires = zipWith (\c i -> CMD i (rhs c) c) input [1..] -- zip [1..] $ sort $ map rhs input
   arr <- newArray (1, length wires) Nothing
-  answer <- faith arr wires "a"
+  answer <- exec arr wires "a"
   print answer
 
 getWire :: [Circuit'] -> WireId -> LHS
 getWire cs name = lhs $ circuit $ head $ filter (\c -> name == wid c) cs
 
-faith :: P7Array -> [Circuit'] -> WireId -> IO Bus
-faith arr cs w = do
+exec :: P7Array -> [Circuit'] -> WireId -> IO Bus
+exec arr cs w = do
   let c = head $ filter (\cmd -> wid cmd == w) cs
   cached <- readArray arr (arrI c)
   val <- if (isJust cached)
@@ -323,13 +322,13 @@ executeC :: P7Array -> [Circuit'] -> LHS -> IO Bus
 executeC arr cs (Const (Fixed v)) = return v
 executeC arr cs (Const (Wire w)) = executeC arr cs (getWire cs w)
 executeC arr cs (Unary (Fixed v) Not) = return $ complement v
-executeC arr cs (Unary (Wire w) Not) = complement <$> (faith arr cs w)
+executeC arr cs (Unary (Wire w) Not) = complement <$> (exec arr cs w)
 executeC arr cs (Binary (Fixed v1) (Fixed v2) op) = return $ (getOp op) v1 v2
-executeC arr cs (Binary (Wire w) (Fixed v) op) = flip (getOp op) v <$> (faith arr cs w)
-executeC arr cs (Binary (Fixed v) (Wire w) op) = (getOp op) v <$> (faith arr cs w)
+executeC arr cs (Binary (Wire w) (Fixed v) op) = flip (getOp op) v <$> (exec arr cs w)
+executeC arr cs (Binary (Fixed v) (Wire w) op) = (getOp op) v <$> (exec arr cs w)
 executeC arr cs (Binary (Wire w1) (Wire w2) op) = do
-  a <- faith arr cs w1
-  b <- faith arr cs w2
+  a <- exec arr cs w1
+  b <- exec arr cs w2
   return $ (getOp op) a b
 
 getOp :: BinaryGate -> Bus -> Bus -> Bus
@@ -849,6 +848,39 @@ isResting r@(R _ (_, stamina) rest) clock =
 
 
 
+-- Problem 15 --
+
+faith :: Int -> [a] -> [[(Int, a)]]
+faith n (x:[]) = [[(n,x)]]
+faith 0 xs = map (\x -> [(0,x)]) xs
+faith n (x:xs) = -- attach every num from 0..n to x.
+  let h = map (\i -> (i,x)) [0..n]
+      ts = concatMap (\head -> map (head:) (faith (n - fst head) xs)) h
+  in ts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -- Problem 16 --
 
@@ -891,8 +923,6 @@ targetFacts = [("children", (==3)),
                ("trees", (>3)),
                ("cars", (==2)),
                ("perfumes", (==1))]
-
-
 
 
 
