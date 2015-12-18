@@ -862,34 +862,19 @@ ingredients = [(I 3 2 0 (-2) 0),
 
 testIngs = [(I 8 (-1) (-2) 6 3), (I 3 2 3 (-2) (-1))]
 testRecipe = zip [44,56] testIngs :: Recipe
-testQualities = [cap, dur, flav, tex]
+testProperties = [cap, dur, flav, tex]
 
-hope :: [Ingredient] -> (Recipe, Int)
-hope is = let
-  allRecipes = faith 100 is
-  scored = map (\r -> (r, scoreRecipe r)) allRecipes
-  in maximumBy (\a b -> compare (snd a) (snd b)) scored
-
-faith :: Int -> [Ingredient] -> [Recipe]
-faith n (x:[]) = [[(n,x)]]
-faith n (x:xs) = -- attach every num from 0..n to x.
-  let h = map (\i -> (i,x)) [1..n]
-      ts = concatMap (\head -> map (head:) (faith (n - fst head) xs)) h
+allRecipes :: Int -> [Ingredient] -> [Recipe]
+allRecipes n (x:[]) = [[(n,x)]]
+allRecipes n (x:xs) = -- attach every num from 0..n to x.
+  let h = map (\i -> (i,x)) [0..n]
+      ts = concatMap (\head -> map (head:) (allRecipes (n - fst head) xs)) h
   in ts
 
-scoreRecipe :: Recipe -> Int
-scoreRecipe r = product $ map (calcQuality r) testQualities
-
-calcQuality :: Recipe -> (Ingredient -> Int) -> Int
-calcQuality r f = let
-  qs = map (f . snd) r
-  qtys = map fst r
-  raw = zipWith (*) qtys qs
-  cooked = sum raw
-  in cooked
-
-
-
+scoreRecipe r = let
+  byProperty = map (\f -> map (f . snd) r) testProperties
+  summed = map sum byProperty
+  in summed
 
 
 
