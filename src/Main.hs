@@ -10,6 +10,7 @@ import Data.Array.IO
 import Data.Maybe
 import Control.Monad.State.Strict
 import Control.Monad.Trans
+import P15
 
 main :: IO ()
 main = p7
