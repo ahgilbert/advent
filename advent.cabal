@@ -20,3 +20,4 @@ executable advent
                        , megaparsec
                        , array
                        , mtl
+                       , json

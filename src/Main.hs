@@ -1,6 +1,7 @@
 module Main where
 
 import Text.Megaparsec
+import Text.JSON.String
 import Data.Bits
 import Data.Char
 import Data.Either
@@ -670,6 +671,10 @@ goodMap = "{\"a\":12,\"b\":\"food\",\"c\":90}"
 badMap = "{\"a\":12,\"b\":\"red\",\"c\":90}"
 
 
+p12_2 = do
+  inp <- slurp "12.txt"
+  let json = runGetJSON readJSArray inp
+  print json
 
 
 
@@ -872,11 +877,27 @@ allRecipes n (x:xs) = -- attach every num from 0..n to x.
   in ts
 
 scoreRecipe r = let
-  byProperty = map (\f -> map (f . snd) r) testProperties
-  summed = map sum byProperty
-  in summed
+  byProperty = transpose $ map distributeQty r
+  summed = map ((max 0) . sum) byProperty
+  in product summed
 
+distributeQty (q,i) = map (q *) [cap i, dur i, flav i, tex i]
 
+p15_1 = let
+  allRs = allRecipes 100 ingredients
+  scores = map scoreRecipe allRs
+  best = maximum scores
+  in print best
+
+p15_2 = let
+  allRs = allRecipes 100 ingredients
+  loCal = filter (\r -> recipeCals r == 500) allRs
+  scores = map scoreRecipe loCal
+  best = maximum scores
+  in print best
+
+recipeCals :: Recipe -> Int
+recipeCals r = sum $ map (\(q,i) -> q * (cal i)) r
 
 
 
@@ -966,3 +987,37 @@ getCombosSumming target (n:ns)
     withoutN = getCombosSumming target ns
 getCombosSumming _ [] = []
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Problem 19 --
+p19 = do
+  inp <- slurp "19b.txt"
+  let (swaps, seed) = head $ rights [runParser parseMedicine "" inp]
+  print seed
+
+parseMedicine :: Parsec String ([(String, String)], String)
+parseMedicine = do
+  swaps <- some parseReplacement
+  newline
+  seed <- some letterChar
+  return (swaps, seed)
+
+parseReplacement = do
+  from <- some letterChar
+  string " => "
+  to <- some letterChar
+  newline
+  return (from, to)
