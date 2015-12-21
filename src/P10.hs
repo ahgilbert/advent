@@ -1,9 +1,10 @@
 module P10 where
 
 -- Problem 10 --
-p10_1 = do
+p10 = do
   let input = "1113122113"
-  print $ take 51 $ map length $ iterate lookSay input
+      expansions = iterate lookSay input
+  print $ length (expansions !! 50)
 
 lookSay :: String -> String
 lookSay s =

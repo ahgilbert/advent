@@ -11,6 +11,8 @@ p5 isNice = do
 
 p5_1 = p5 isNice1
 
+p5_2 = p5 isNice2
+
 isNice1 :: String -> Bool
 isNice1 s = and [hasVowels s, hasDubs s, noVeto ["ab", "cd", "pq", "xy"] s]
 
@@ -20,8 +22,6 @@ hasDubs s = any dubs $ zip s (tail s)
   where dubs (x,y) = x == y
 
 noVeto blackList s = not . or $ map (flip isInfixOf s) blackList
-
-p5_2 = p5 isNice2
 
 isNice2 s = and [dupes s, aba s]
 
