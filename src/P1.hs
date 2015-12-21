@@ -9,7 +9,6 @@ p1_1 = do
 
 p1_2 = do
   instructions <- readFile "data/1.txt"
-  print $ length instructions
   let faith = sumBraces instructions
       hope = length $ takeWhile (0 <=) faith
   print hope

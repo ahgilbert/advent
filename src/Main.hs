@@ -19,5 +19,7 @@ import P15
 import P16
 import P17
 
+completedProblems = [p1_1, p1_2, p2, p3_1]
+
 main :: IO ()
-main = p7
+main = sequence_ completedProblems

@@ -4,13 +4,15 @@ import AdventUtil
 import Text.Megaparsec
 import Data.List
 
--- Problem 2 --
-p2_1 = do
-  source <- readFile "data/2.txt"
-  let gifts = runParser (some giftParser) "" source
-      faith = either (\_ -> []) (map allPairs) gifts
-      hope = map (sum . wrap . sort . (map prod)) faith
-  print $ sum hope
+p2 = do
+  gifts <- slurpLinesWith giftParser "2.txt"
+  let dims = map allPairs gifts
+      part1 = sum $ map (sum . wrap . sort . (map prod)) dims
+      volumes = vols gifts
+      ps = minPerims dims
+      part2 = zipWith (+) volumes ps
+  print $ part1
+  print $ sum part2
 
 giftParser :: Parsec String [Int]
 giftParser = do
@@ -19,7 +21,6 @@ giftParser = do
   w <- parseInt
   char 'x'
   h <- parseInt
-  newline
   return [l,w,h]
 
 allPairs :: [a] -> [(a,a)]
@@ -29,6 +30,11 @@ prod :: Num a => (a,a) -> a
 prod (x,y) = x * y
 
 wrap xs@(x:_) = x : map (2*) xs
+
+vols = map product
+
+minPerims xs = map (minimum . map perimeter) xs
+
 
 perimeter (x,y) = (2 * x) + (2 * y)
 
