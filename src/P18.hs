@@ -14,7 +14,8 @@ p18 = do
   arr <- createP18Array
   let gens = repeat (getNextGen arr)
   sequence_ (take 100 gens)
-  return arr
+  pop <- countLiveCells arr
+  print pop
 
 createP18Array = do
   initState <- lines <$> slurp "18.txt"
