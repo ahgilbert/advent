@@ -1,6 +1,8 @@
 module P19 where
 
 import AdventUtil
+import Data.Either
+import Text.Megaparsec
 
 -- Problem 19 --
 p19 = do
