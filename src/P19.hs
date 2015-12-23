@@ -10,26 +10,26 @@ import Text.Megaparsec
 p19 = do
   inp <- slurp "19.txt"
   let (swaps, seed) = head $ rights [runParser parseMedicine "" inp]
-      molecules = nub $ faith swaps 1 "" seed
-    in print $ ("", length molecules)
+      molecules = nub $ synth swaps 1 "" seed
+    in print $ (molecules, length molecules)
 
 groupSwaps swaps = let
   sorted = sortBy (\a b -> compare (fst a) (fst b)) swaps
   grouped = groupBy (\a b -> (fst a) == (fst b)) sorted
   in map (\xs@((k,_):_) -> (k, map snd xs)) grouped
 
-faith :: [(String, String)] -> Int -> String -> String -> [String]
-faith _ 0 sofar seed = [sofar ++ seed]
-faith _ _ _ "" = []
-faith rules tick sofar seed =
+synth :: [(String, String)] -> Int -> String -> String -> [String]
+synth _ 0 sofar seed = [sofar ++ seed]
+synth _ _ _ "" = []
+synth rules tick sofar seed =
   let matches = filter (\rule -> isPrefixOf (fst rule) seed) rules
-      continuations = concatMap (\r -> faith
+      continuations = concatMap (\r -> synth
                                        rules
                                        (tick - 1)
                                        (sofar ++ snd r)
                                        (drop (length (fst r)) seed))
                       matches
-      skipThis = faith rules tick (sofar ++ [head seed]) (drop 1 seed)
+      skipThis = synth rules tick (sofar ++ [head seed]) (drop 1 seed)
   in continuations ++ skipThis
 
 
