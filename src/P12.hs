@@ -45,14 +45,24 @@ badMap = "{\"a\":12,\"b\":\"red\",\"c\":90}"
 p12_2 = do
   inp <- slurp "12.txt"
   let json = head $ rights [runGetJSON readJSValue inp]
-  return json
+  print $ jsNums json
 
 jsNums :: JSValue -> Int
 jsNums JSNull = 0
 jsNums (JSBool _) = 0
 jsNums (JSString _) = 0
 jsNums (JSArray js) = sum $ map jsNums js
-jsNums (JSObject os) = sum $ map (jsNums . snd) (fromJSObject os)
+jsNums (JSObject os) = let
+  assoc = fromJSObject os
+  trash = isRed assoc
+  in if trash then 0 else sum $ map (jsNums . snd) (fromJSObject os)
 jsNums (JSRational _ x) = truncate x
 
+isRed :: [(String, JSValue)] -> Bool
+isRed ps = 0 < (length $ filter isRed' (map snd ps))
+  where
+    isRed' (JSString v)
+      | v == (toJSString "red") = True
+      | True = False
+    isRed' _ = False
 
