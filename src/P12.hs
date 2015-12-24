@@ -48,5 +48,11 @@ p12_2 = do
   return json
 
 jsNums :: JSValue -> Int
-jsNums _ = 0
+jsNums JSNull = 0
+jsNums (JSBool _) = 0
+jsNums (JSString _) = 0
+jsNums (JSArray js) = sum $ map jsNums js
+jsNums (JSObject os) = sum $ map (jsNums . snd) (fromJSObject os)
+jsNums (JSRational _ x) = truncate x
+
 
