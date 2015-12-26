@@ -7,10 +7,15 @@ import Data.Tree
 import Text.Megaparsec
 
 -- Problem 19 --
-p19 = do
+slurp19 = do
   inp <- slurp "19.txt"
   let (swaps, seed) = head $ rights [runParser parseMedicine "" inp]
-      molecules = nub $ synth swaps 1 "" seed
+  return (swaps, seed)
+
+
+p19 = do
+  (swaps, seed) <- slurp19
+  let molecules = nub $ synth swaps 1 "" seed
     in print $ (molecules, length molecules)
 
 groupSwaps swaps = let
