@@ -37,6 +37,19 @@ synth rules tick sofar seed =
       skipThis = synth rules tick (sofar ++ [head seed]) (drop 1 seed)
   in continuations ++ skipThis
 
+p19_2 = do
+  (swaps, seed) <- slurp19
+  let faith = iterate (p19Cycle swaps) [seed]
+      hope = span (\xs -> minimum (map length xs) > 1) faith
+      passes = length $ fst hope
+      charity = snd hope
+  print passes
+  print $ head charity
+
+-- run synth, yield the 10 most promising results
+p19Cycle :: [(String, String)] -> [String] -> [String]
+p19Cycle swaps seeds =
+  nub $ take 50 $ sortOn length $ concatMap (synth swaps 1 "") seeds
 
 -- Parsers --
 
@@ -53,17 +66,3 @@ parseReplacement = do
   to <- some letterChar
   newline
   return (from, to)
-
-p19_2 = do
-  (swaps, seed) <- slurp19
-  let faith = iterate (p19Cycle swaps) [seed]
-      hope = span (\xs -> minimum (map length xs) > 1) faith
-      passes = length $ fst hope
-      charity = snd hope
-  print passes
-  print $ head charity
-
--- run synth, yield the 10 most promising results
-p19Cycle :: [(String, String)] -> [String] -> [String]
-p19Cycle swaps seeds =
-  nub $ take 50 $ sortOn length $ concatMap (synth swaps 1 "") seeds
