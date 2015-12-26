@@ -30,13 +30,4 @@ quickProblems = [p1_1, p1_2, p2, p3_1, p3_2, p5_1, p5_2, p7, p8_1, p8_2, p9, p10
 slowProblems = [p4, p6_1, p18]
 
 main :: IO ()
-main = do
-  (swaps, seed) <- slurp19
-  let faith = iterate (p19Cycle swaps) [seed]
-      hope = dropWhile (\xs -> minimum (map length xs) > 10) faith
-  mapM_ print $ zip (head hope) (map length (head hope))
-
--- run synth, yield the 10 most promising results
-p19Cycle :: [(String, String)] -> [String] -> [String]
-p19Cycle swaps seeds =
-  nub $ take 50 $ sortOn length $ concatMap (synth swaps 1 "") seeds
+main = p19_2
