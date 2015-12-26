@@ -10,8 +10,8 @@ import Text.Megaparsec
 slurp19 = do
   inp <- slurp "19.txt"
   let (swaps, seed) = head $ rights [runParser parseMedicine "" inp]
-  return (swaps, seed)
-
+      swaps' = map (\(a,b) -> (b,a)) swaps
+  return (swaps', seed)
 
 p19 = do
   (swaps, seed) <- slurp19
