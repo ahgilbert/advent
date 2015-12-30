@@ -4,6 +4,7 @@ import AdventUtil
 import Data.Array.IO
 import Data.List
 import Text.Megaparsec
+import Control.Monad.State
 
 -- Problem 9 (crying for better state management...) --
 
@@ -21,14 +22,18 @@ instance Eq Trip where
 
 p9 = do
   (keys, arr) <- slurp9
-  distances <- mapM (getTripLength arr) (permutations keys)
-  let shortest = minimum distances
-      longest = maximum distances
+  ((shortest, longest), _) <- runStateT (p9' keys) arr
   putStrLn "shortest:"
   print shortest
   putStrLn ""
   putStrLn "longest:"
   print longest
+
+p9' keys = do
+  distances <- mapM getTripLength (permutations keys)
+  let shortest = minimum distances
+      longest = maximum distances
+    in return (shortest, longest)
 
 slurp9 :: IO ([Location], IOArray (Int,Int) Int)
 slurp9 = do
@@ -59,12 +64,15 @@ parseDistance = do
   distance <- read <$> some digitChar
   return $ Distance pointA pointB distance
 
-getTripLength :: IOArray (Int,Int) Int -> [Location] -> IO Trip
-getTripLength arr locs = do
+getTripLength :: [Location] -> StateT (IOArray (Int,Int) Int) IO Trip
+getTripLength locs = do
+  arr <- get
   let hops = zip locs (tail locs)
       n = length locs
-  dists <- mapM (getDistance arr) hops
+  dists <- mapM getDistance hops
   return (Trip (map name locs) (sum dists))
 
-getDistance :: IOArray (Int,Int) Int -> (Location, Location) -> IO Int
-getDistance arr (a,b) = readArray arr (idx a, idx b)
+getDistance :: (Location, Location) -> StateT (IOArray (Int, Int) Int) IO Int
+getDistance (a,b) = do
+  arr <- get
+  liftIO $ readArray arr (idx a, idx b)
