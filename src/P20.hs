@@ -21,11 +21,27 @@ factorize' target current
        then [current, q] ++ factorize' target (current + 1)
        else factorize' target (current + 1)
 
-factorize2 n =
-  nub $ factorize2' n 1
+p20_2 target = do
+  let factors = map factorize2 [1..]
+      qualifying = dropWhile (\fs -> sum (map (* 11) fs) < target) factors
+    in print $ head qualifying
 
-factorize2' target current
-  | current * current > target = []
-  | True = let
-    (q,r) = quotRem target current
-    in undefined
+factorize2 n =
+  nub $ dropWhile (\x -> x * 50 < n) $ sort $ factorize' n 1
+
+{-
+  map faith [1..]
+  faith n = concatMap id $ map (replicate 50) (replicate (n - 1) 0 ++ [n])
+-}
+
+houses :: Int -> [(Int, Int)]
+houses lastElf = zip [1..] $
+                 map sum $
+                 transpose $
+                 take (min lastElf 1000) elves
+
+
+elves = map concat $
+        map (replicate 50) $
+        map (\n -> replicate (n - 1) 0 ++ [n * 11]) $
+        [1..]
