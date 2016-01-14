@@ -1,5 +1,6 @@
 module P23 where
 
+-- calculated the constants by hand
 seed23_1 = 20895
 seed23_2 = 60975
 
