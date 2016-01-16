@@ -12,7 +12,7 @@ data WizSim = WizSim { wiz :: Guy,
             | Lose
             deriving (Eq, Show)
 
-data Spell = Missile | Drain | Shield | Poison | Recharge
+data Spell = Missile | Drain | Shield | Poison | Recharge | EndShield
            deriving (Eq, Show)
 
 me22 = Guy 50 0 0
@@ -41,11 +41,11 @@ applyEffects w@(WizSim me b c m es) =
   where decrementEffects (WizSim me b c m es) =
           WizSim me b c m $ map (\(a, n) -> (a, n - 1)) es
         clearEffects (WizSim me b c m es) = let
-          (dying, ongoing) = partition (\(_,n) -> n < 0) es
-          me' = if elem Shield (map fst dying)
-                then me { def = 0 }
-                else me
-          in WizSim me' b c m ongoing
+          (fading, ongoing) = partition (\(_,n) -> n <= 0) es
+          ongoing' = if elem Shield (map fst fading)
+                     then (EndShield, 0) : ongoing
+                     else ongoing
+          in WizSim me b c m ongoing'
 
 {- spells:
      | Name           | Cost  | Effect
@@ -63,6 +63,8 @@ apply (WizSim me b c m es) Poison =
   WizSim me (hurt b 3) c m es
 apply (WizSim me b c m es) Recharge =
   WizSim me b c (m + 101) es
+apply (WizSim me b c m es) EndShield =
+  WizSim (me { def = 0 }) b c m es
 apply w _ = w
 
 cast Missile (WizSim me b c m es) =
