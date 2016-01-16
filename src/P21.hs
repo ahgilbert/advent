@@ -6,8 +6,8 @@ import Math.Combinat.Sets
 data Equip = Equip { cost :: Int, dmg :: Int, arm :: Int } -- cost, damage, armor
            deriving (Show)
 
-data Guy = Guy Int Int Int -- hp, damage, armor
-         deriving (Show)
+data Guy = Guy {hp :: Int, str :: Int, def :: Int} -- hp, damage, armor
+         deriving (Eq, Show)
 
 boss = Guy 103 9 2
 
