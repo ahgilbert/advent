@@ -5,7 +5,6 @@ import P21
 
 data WizSim = WizSim { wiz :: Guy,
                        boss :: Guy,
-                       cost :: Int,
                        mana :: Int,
                        effects :: [(Spell, Int)] }
             | Win
@@ -19,14 +18,14 @@ me22 = Guy 50 0 0
 boss22 = Guy 51 9 0
 allSpells = [Missile, Drain, Shield, Poison, Recharge]
 
-world22 = WizSim me22 boss22 0 500 []
+world22 = WizSim me22 boss22 500 []
 
-world22test1 = WizSim (Guy 10 0 0) (Guy 13 8 0) 0 250 [(Poison, 2), (Shield, 1)]
-world22test2 = WizSim (Guy 10 0 0) (Guy 14 8 0) 0 250 []
+world22test1 = WizSim (Guy 10 0 0) (Guy 13 8 0) 250 [(Poison, 2), (Shield, 1)]
+world22test2 = WizSim (Guy 10 0 0) (Guy 14 8 0) 250 []
 
 isDead (Guy hp _ _) = hp <= 0
 
-faith w@(WizSim me b c m es)
+faith w@(WizSim me b m es)
   | isDead b = Win
   | isDead me = Lose
   | m <= 0 = Lose
@@ -36,16 +35,16 @@ faith w@(WizSim me b c m es)
     outcomes = undefined
     in w'
 
-applyEffects w@(WizSim me b c m es) =
+applyEffects w@(WizSim me b m es) =
   clearEffects $ decrementEffects $ foldl apply w $ map fst es
-  where decrementEffects (WizSim me b c m es) =
-          WizSim me b c m $ map (\(a, n) -> (a, n - 1)) es
-        clearEffects (WizSim me b c m es) = let
+  where decrementEffects (WizSim me b m es) =
+          WizSim me b m $ map (\(a, n) -> (a, n - 1)) es
+        clearEffects (WizSim me b m es) = let
           (fading, ongoing) = partition (\(_,n) -> n <= 0) es
           ongoing' = if elem Shield (map fst fading)
                      then (EndShield, 0) : ongoing
                      else ongoing
-          in WizSim me b c m ongoing'
+          in WizSim me b m ongoing'
 
 {- spells:
      | Name           | Cost  | Effect
@@ -57,30 +56,30 @@ applyEffects w@(WizSim me b c m es) =
      | Recharge       | 229   | +101 mana per turn, 5 turns
 -}
 
-apply (WizSim (Guy hp dmg _) b c m es) Shield =
-  WizSim (Guy hp dmg (7)) b c m es
-apply (WizSim me b c m es) Poison =
-  WizSim me (hurt b 3) c m es
-apply (WizSim me b c m es) Recharge =
-  WizSim me b c (m + 101) es
-apply (WizSim me b c m es) EndShield =
-  WizSim (me { def = 0 }) b c m es
+apply (WizSim (Guy hp dmg _) b m es) Shield =
+  WizSim (Guy hp dmg (7)) b m es
+apply (WizSim me b m es) Poison =
+  WizSim me (hurt b 3) m es
+apply (WizSim me b m es) Recharge =
+  WizSim me b (m + 101) es
+apply (WizSim me b m es) EndShield =
+  WizSim (me { def = 0 }) b m es
 apply w _ = w
 
-cast Missile (WizSim me b c m es) =
-  WizSim me (hurt b 4) (c + 53) (m - 53) es
+cast Missile (WizSim me b m es) =
+  WizSim me (hurt b 4) (m - 53) es
 
-cast Drain (WizSim me b c m es) =
-  WizSim (heal me 2) (hurt b 2) (c + 73) (m - 73) es
+cast Drain (WizSim me b m es) =
+  WizSim (heal me 2) (hurt b 2) (m - 73) es
 
-cast Shield (WizSim me b c m es) =
-  WizSim me b (c + 113) (m - 113) ((Shield, 6) : es)
+cast Shield (WizSim me b m es) =
+  WizSim me b (m - 113) ((Shield, 6) : es)
 
-cast Poison (WizSim me b c m es) =
-  WizSim me b (c + 173) (m - 173) ((Poison, 6) : es)
+cast Poison (WizSim me b m es) =
+  WizSim me b (m - 173) ((Poison, 6) : es)
 
-cast Recharge (WizSim me b c m es) =
-  WizSim me b (c + 229) (m - 229) ((Recharge, 5) : es)
+cast Recharge (WizSim me b m es) =
+  WizSim me b (m - 229) ((Recharge, 5) : es)
 
 heal (Guy hp dmg arm) n = Guy (hp + n) dmg arm
 hurt (Guy hp dmg arm) n = Guy (hp - n) dmg arm
