@@ -33,4 +33,5 @@ quickProblems = [p1_1, p1_2, p2, p3_1, p3_2, p5_1, p5_2, p7, p8_1, p8_2, p9, p10
 slowProblems = [p4, p6_1, p18]
 
 main :: IO ()
-main = p20_2 34000000
+main = p22_1
+

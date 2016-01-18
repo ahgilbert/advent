@@ -15,6 +15,8 @@ data WizSim = WizSim { wiz :: Guy,
 data Spell = Missile | Drain | Shield | Poison | Recharge
            deriving (Eq, Show)
 
+p22_1 = print $ manaSpent . snd $ head $ faith world22
+
 me22 = Guy 50 0 0
 boss22 = Guy 51 9 0
 allSpells = [Missile, Drain, Shield, Poison, Recharge]
@@ -26,16 +28,30 @@ test222 = WizSim (Guy 10 0 0) (Guy 14 8 0) 250 []
 
 isDead (Guy hp _ _) = hp <= 0
 
-oneRound :: (WizSim, [Spell]) -> [(WizSim, [Spell])]
-oneRound (w@(WizSim me b m _), spellsSoFar)
+faith :: WizSim -> [(WizSim, [Spell])]
+faith w = sortOn (\(_,ss) -> manaSpent ss) $
+          filter (\(outcome,_) -> outcome == BossDead) $ wizardFight (w, [])
+
+wizardFight :: (WizSim, [Spell]) -> [(WizSim, [Spell])]
+wizardFight (w@(WizSim me b m _), spellsSoFar)
   | isDead b = [(BossDead, spellsSoFar)]
-  | isDead me = [(WizardDead, spellsSoFar)]
-  | m <= 0 = [(OutOfMana, spellsSoFar)]
+  | isDead me = [(WizardDead, [])]
+  | m <= 0 = [(OutOfMana, [])]
   | True = let
     w' = applyEffects w
     outcomes = map (\s -> (cast s w', (s : spellsSoFar))) $
                    filter (\s -> not $ elem s (map fst (effects w'))) allSpells
-    in map bossTurn outcomes
+    outcomes' = filter (\(a,_) -> a /= WizardDead && a /= OutOfMana) $
+                       map bossTurn outcomes
+    in concatMap wizardFight outcomes'
+
+manaSpent ss = sum $ map spellCost ss
+
+spellCost Missile  = 53
+spellCost Drain    = 73
+spellCost Shield   = 113
+spellCost Poison   = 173
+spellCost Recharge = 229
 
 bossTurn (w,ss) =
   let w' = applyEffects w
@@ -53,7 +69,7 @@ applyEffects w@(WizSim me b m es) =
           in WizSim me' b m ongoing
 
 {- spells:
-     | Name           | Cost  | Effect
+     | Name           | cost  | Effect
 -----+----------------+-------+----------------
      | Magic Missile  | 53    | 4 damage to boss
      | Drain          | 73    | 2 damage to boss, heal 2
