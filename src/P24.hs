@@ -16,7 +16,7 @@ p24 = do
       byCount = sortOn length groups
   return (byCount, pkgs)
 
-faith all byCount = let -- find some triplet in byCount that contains all elems of all
+p24undone all byCount = let -- find some triplet in byCount that contains all elems of all
   passenger = head byCount
   others = killDupes passenger $ tail byCount
   pairs = [(x,y) | (x:xt) <- tails others, y <- xt]
