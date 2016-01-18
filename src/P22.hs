@@ -8,11 +8,11 @@ data WizSim = WizSim { wiz :: Guy,
                        mana :: Int,
                        effects :: [(Spell, Int)] }
             | BossDead
-            | MageDead
+            | WizardDead
             | OutOfMana
             deriving (Eq, Show)
 
-data Spell = Missile | Drain | Shield | Poison | Recharge | EndShield
+data Spell = Missile | Drain | Shield | Poison | Recharge
            deriving (Eq, Show)
 
 me22 = Guy 50 0 0
@@ -21,22 +21,21 @@ allSpells = [Missile, Drain, Shield, Poison, Recharge]
 
 world22 = WizSim me22 boss22 500 []
 
-world22test1 = WizSim (Guy 10 0 0) (Guy 13 8 0) 250 [(Poison, 2), (Shield, 1)]
-world22test2 = WizSim (Guy 10 0 0) (Guy 14 8 0) 250 []
+test221 = WizSim (Guy 10 0 0) (Guy 13 8 0) 250 [(Poison, 2), (Shield, 1)]
+test222 = WizSim (Guy 10 0 0) (Guy 14 8 0) 250 []
 
 isDead (Guy hp _ _) = hp <= 0
 
--- faith is to simulate one round--from a starting state, cast each legal spell
-faith :: (WizSim, [Spell]) -> [(WizSim, [Spell])]
-faith (w@(WizSim me b m es), spellsSoFar)
+oneRound :: (WizSim, [Spell]) -> [(WizSim, [Spell])]
+oneRound (w@(WizSim me b m _), spellsSoFar)
   | isDead b = [(BossDead, spellsSoFar)]
-  | isDead me = [(MageDead, spellsSoFar)]
+  | isDead me = [(WizardDead, spellsSoFar)]
   | m <= 0 = [(OutOfMana, spellsSoFar)]
   | True = let
     w' = applyEffects w
     outcomes = map (\s -> (cast s w', (s : spellsSoFar))) $
-               filter (\s -> not $ elem s (map fst es)) allSpells
-    in map (\(w'',ss) -> (bossAttacks (applyEffects w''), ss)) outcomes
+                   filter (\s -> not $ elem s (map fst (effects w'))) allSpells
+    in map bossTurn outcomes
 
 bossTurn (w,ss) =
   let w' = applyEffects w
@@ -48,10 +47,10 @@ applyEffects w@(WizSim me b m es) =
           WizSim me b m $ map (\(a, n) -> (a, n - 1)) es
         clearEffects (WizSim me b m es) = let
           (fading, ongoing) = partition (\(_,n) -> n <= 0) es
-          ongoing' = if elem Shield (map fst fading)
-                     then (EndShield, 0) : ongoing
-                     else ongoing
-          in WizSim me b m ongoing'
+          me' = if elem Shield (map fst fading)
+                then me { def = 0 }
+                else me
+          in WizSim me' b m ongoing
 
 {- spells:
      | Name           | Cost  | Effect
@@ -64,13 +63,11 @@ applyEffects w@(WizSim me b m es) =
 -}
 
 apply (WizSim (Guy hp dmg _) b m es) Shield =
-  WizSim (Guy hp dmg (7)) b m es
+  WizSim (Guy hp dmg 7) b m es
 apply (WizSim me b m es) Poison =
   WizSim me (hurt b 3) m es
 apply (WizSim me b m es) Recharge =
   WizSim me b (m + 101) es
-apply (WizSim me b m es) EndShield =
-  WizSim (me { def = 0 }) b m es
 apply w _ = w
 
 cast Missile (WizSim me b m es) =
