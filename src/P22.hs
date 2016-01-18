@@ -34,9 +34,9 @@ faith (w@(WizSim me b m es), spellsSoFar)
   | m <= 0 = [(OutOfMana, spellsSoFar)]
   | True = let
     w' = applyEffects w
-    possibleSpells = filter (\s -> not $ elem s (map fst es)) allSpells
-    outcomes = map (\s -> (cast s w', (s : spellsSoFar))) possibleSpells
-    in map (\(w'',ss) -> (bossAttacks w'', ss)) outcomes
+    outcomes = map (\s -> (cast s w', (s : spellsSoFar))) $
+               filter (\s -> not $ elem s (map fst es)) allSpells
+    in map (\(w'',ss) -> (bossAttacks (applyEffects w''), ss)) outcomes
 
 bossTurn (w,ss) =
   let w' = applyEffects w
