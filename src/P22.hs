@@ -7,8 +7,9 @@ data WizSim = WizSim { wiz :: Guy,
                        boss :: Guy,
                        mana :: Int,
                        effects :: [(Spell, Int)] }
-            | Win
-            | Lose
+            | BossDead
+            | MageDead
+            | OutOfMana
             deriving (Eq, Show)
 
 data Spell = Missile | Drain | Shield | Poison | Recharge | EndShield
@@ -25,15 +26,21 @@ world22test2 = WizSim (Guy 10 0 0) (Guy 14 8 0) 250 []
 
 isDead (Guy hp _ _) = hp <= 0
 
-faith w@(WizSim me b m es)
-  | isDead b = Win
-  | isDead me = Lose
-  | m <= 0 = Lose
+-- faith is to simulate one round--from a starting state, cast each legal spell
+faith :: (WizSim, [Spell]) -> [(WizSim, [Spell])]
+faith (w@(WizSim me b m es), spellsSoFar)
+  | isDead b = [(BossDead, spellsSoFar)]
+  | isDead me = [(MageDead, spellsSoFar)]
+  | m <= 0 = [(OutOfMana, spellsSoFar)]
   | True = let
     w' = applyEffects w
     possibleSpells = filter (\s -> not $ elem s (map fst es)) allSpells
-    outcomes = undefined
-    in w'
+    outcomes = map (\s -> (cast s w', (s : spellsSoFar))) possibleSpells
+    in map (\(w'',ss) -> (bossAttacks w'', ss)) outcomes
+
+bossTurn (w,ss) =
+  let w' = applyEffects w
+  in (bossAttacks w', ss)
 
 applyEffects w@(WizSim me b m es) =
   clearEffects $ decrementEffects $ foldl apply w $ map fst es
@@ -82,4 +89,7 @@ cast Recharge (WizSim me b m es) =
   WizSim me b (m - 229) ((Recharge, 5) : es)
 
 heal (Guy hp dmg arm) n = Guy (hp + n) dmg arm
-hurt (Guy hp dmg arm) n = Guy (hp - n) dmg arm
+hurt (Guy hp dmg arm) n = Guy (hp - n') dmg arm
+  where n' = max 1 (n - arm)
+
+bossAttacks (WizSim me b m es) = WizSim (hurt me 9) b m es
