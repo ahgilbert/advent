@@ -21,7 +21,7 @@ allSpells = [Missile, Drain, Shield, Poison, Recharge]
 
 world22 = WizSim me22 boss22 500 []
 
-test221 = WizSim (Guy 10 0 0) (Guy 13 8 0) 250 [(Poison, 2), (Shield, 1)]
+test221 = WizSim (Guy 10 0 0) (Guy 13 8 0) 250 []
 test222 = WizSim (Guy 10 0 0) (Guy 14 8 0) 250 []
 
 isDead (Guy hp _ _) = hp <= 0
@@ -89,4 +89,4 @@ heal (Guy hp dmg arm) n = Guy (hp + n) dmg arm
 hurt (Guy hp dmg arm) n = Guy (hp - n') dmg arm
   where n' = max 1 (n - arm)
 
-bossAttacks (WizSim me b m es) = WizSim (hurt me 9) b m es
+bossAttacks (WizSim me b m es) = WizSim (hurt me (str b)) b m es
