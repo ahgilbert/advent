@@ -10,6 +10,7 @@ data WizSim = WizSim { wiz :: Guy,
             | BossDead
             | WizardDead
             | OutOfMana
+            | CircuitBreak
             deriving (Eq, Show)
 
 data Spell = Missile | Drain | Shield | Poison | Recharge
@@ -37,6 +38,7 @@ wizardFight (w@(WizSim me b m _), spellsSoFar)
   | isDead b = [(BossDead, spellsSoFar)]
   | isDead me = [(WizardDead, [])]
   | m <= 0 = [(OutOfMana, [])]
+  | length spellsSoFar > 10 = [(CircuitBreak, [])]
   | True = let
     w' = applyEffects w
     outcomes = map (\s -> (cast s w', (s : spellsSoFar))) $
