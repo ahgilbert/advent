@@ -16,11 +16,15 @@ data WizSim = WizSim { wiz :: Guy,
 data Spell = Missile | Drain | Shield | Poison | Recharge
            deriving (Eq, Show)
 
-p22_1 = print $ manaSpent . snd $ head $ faith world22
+p22_1 = let
+  best = head $ faith world22
+  bestCost = manaSpent $ snd best
+  spells = reverse $ snd best
+  in print $ (bestCost, spells)
 
 me22 = Guy 50 0 0
 boss22 = Guy 51 9 0
-allSpells = [Missile, Drain, Shield, Poison, Recharge]
+allSpells = [Drain, Shield, Poison, Missile, Recharge]
 
 world22 = WizSim me22 boss22 500 []
 
@@ -43,18 +47,30 @@ wizardFight (w@(WizSim me b m _), spellsSoFar)
     outcomes = wizardTurn (w, spellsSoFar)
     outcomes' = map bossTurn outcomes
     in concatMap wizardFight outcomes'
+wizardFight x = [x]
 
 wizardTurn (w, spellsSoFar) = let
-  w' = applyEffects w
-  castableSpells = filter (\s -> not $ elem s (map fst (effects w'))) allSpells
+  part2 = w { wiz = hurt (wiz w) 1 }
+  w' = applyEffects part2
+  castableSpells = filter
+                   (\s -> (not $ activeSpell s w') && (affordableSpell s w'))
+                   allSpells
   outcomes = map (\s -> (cast s w', (s : spellsSoFar))) castableSpells
-  in filter fightContinues outcomes
+  in if isDead (wiz part2)
+     then [(WizardDead, spellsSoFar)]
+     else filter fightContinues outcomes
   where fightContinues ((WizSim _ _ _ _), _) = True
         fightContinues _ = False
+        activeSpell s (WizSim _ _ _ es) = elem s (map fst es)
+        activeSpell _ _ = False
+        affordableSpell s (WizSim _ _ m _) = spellCost s < m
+        affordableSpell _ _ = False
 
 bossTurn (w,ss) =
   let w' = applyEffects w
   in (bossAttacks w', ss)
+     where bossAttacks (WizSim me b m es) = WizSim (hurt me (str b)) b m es
+           bossAttacks x = x
 
 manaSpent ss = sum $ map spellCost ss
 
@@ -74,6 +90,7 @@ applyEffects w@(WizSim me b m es) =
                 then me { def = 0 }
                 else me
           in WizSim me' b m ongoing
+applyEffects x = x
 
 {- spells:
      | Name           | cost  | Effect
@@ -112,4 +129,3 @@ heal (Guy hp dmg arm) n = Guy (hp + n) dmg arm
 hurt (Guy hp dmg arm) n = Guy (hp - n') dmg arm
   where n' = max 1 (n - arm)
 
-bossAttacks (WizSim me b m es) = WizSim (hurt me (str b)) b m es
