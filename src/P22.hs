@@ -40,12 +40,21 @@ wizardFight (w@(WizSim me b m _), spellsSoFar)
   | m <= 0 = [(OutOfMana, [])]
   | length spellsSoFar > 10 = [(CircuitBreak, [])]
   | True = let
-    w' = applyEffects w
-    outcomes = map (\s -> (cast s w', (s : spellsSoFar))) $
-                   filter (\s -> not $ elem s (map fst (effects w'))) allSpells
-    outcomes' = filter (\(a,_) -> a /= WizardDead && a /= OutOfMana) $
-                       map bossTurn outcomes
+    outcomes = wizardTurn (w, spellsSoFar)
+    outcomes' = map bossTurn outcomes
     in concatMap wizardFight outcomes'
+
+wizardTurn (w, spellsSoFar) = let
+  w' = applyEffects w
+  castableSpells = filter (\s -> not $ elem s (map fst (effects w'))) allSpells
+  outcomes = map (\s -> (cast s w', (s : spellsSoFar))) castableSpells
+  in filter fightContinues outcomes
+  where fightContinues ((WizSim _ _ _ _), _) = True
+        fightContinues _ = False
+
+bossTurn (w,ss) =
+  let w' = applyEffects w
+  in (bossAttacks w', ss)
 
 manaSpent ss = sum $ map spellCost ss
 
@@ -54,10 +63,6 @@ spellCost Drain    = 73
 spellCost Shield   = 113
 spellCost Poison   = 173
 spellCost Recharge = 229
-
-bossTurn (w,ss) =
-  let w' = applyEffects w
-  in (bossAttacks w', ss)
 
 applyEffects w@(WizSim me b m es) =
   clearEffects $ decrementEffects $ foldl apply w $ map fst es
